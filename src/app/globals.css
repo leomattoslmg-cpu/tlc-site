@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Paleta aprovada (especificação, seção 14). Valores em "R G B" para aceitar opacidade. */
+:root {
+  --primaria: 31 78 121;        /* azul-petróleo #1F4E79 */
+  --primaria-forte: 23 61 96;
+  --sobre-primaria: 255 255 255;
+  --destaque: 184 134 11;       /* dourado #B8860B: só detalhes; não use como cor de texto sobre branco */
+  --fundo: 255 255 255;
+  --superficie: 245 247 250;    /* #F5F7FA */
+  --borda: 220 226 233;
+  --texto: 31 41 51;            /* grafite #1F2933 */
+  --texto-apoio: 82 96 109;     /* #52606D */
+  --cat-geral: 82 96 109;
+  --cat-eventos: 27 127 75;     /* #1B7F4B */
+  --cat-coordenacao: 107 63 160;/* #6B3FA0 */
+  --cat-importante: 180 35 24;  /* #B42318 */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --primaria: 120 170 214;
+    --primaria-forte: 150 190 226;
+    --sobre-primaria: 16 24 32;
+    --destaque: 212 160 36;
+    --fundo: 16 24 32;
+    --superficie: 27 37 48;
+    --borda: 52 64 77;
+    --texto: 235 240 245;
+    --texto-apoio: 170 182 194;
+    --cat-geral: 170 182 194;
+    --cat-eventos: 74 190 130;
+    --cat-coordenacao: 178 140 230;
+    --cat-importante: 244 120 108;
+  }
+}
+
+html { font-size: 16px; }
+body { @apply bg-fundo font-sans text-texto antialiased; }
+h1, h2, h3 { @apply font-semibold text-texto; }
+:focus-visible { outline: 3px solid rgb(var(--primaria)); outline-offset: 2px; }
+
+@layer components {
+  .container-tlc { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
+  .btn { @apply inline-flex min-h-[48px] items-center justify-center rounded-cartao px-5 text-base font-semibold transition-colors; }
+  .btn-primario { @apply btn bg-primaria text-primaria-sobre hover:bg-primaria-forte; }
+  .btn-secundario { @apply btn border border-primaria text-primaria hover:bg-superficie; }
+  .cartao { @apply rounded-cartao border border-borda bg-fundo shadow-cartao; }
+  .campo { @apply min-h-[48px] w-full rounded-cartao border border-borda bg-fundo px-3 text-base text-texto placeholder:text-texto-apoio; }
+}

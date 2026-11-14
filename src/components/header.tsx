@@ -1,0 +1,49 @@
+import Link from 'next/link';
+import { Menu } from 'lucide-react';
+import { MENU, PORTAL_URL, SITE_NOME } from '@/lib/site';
+
+export function Header() {
+  return (
+    <header className="sticky top-0 z-40 border-b border-borda bg-fundo/95 backdrop-blur">
+      <div className="container-tlc flex min-h-[64px] items-center justify-between gap-4">
+        <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primaria">
+          {/* Troque pelo logotipo do TLC quando existir (public/logo.svg). */}
+          <span aria-hidden className="grid h-9 w-9 place-items-center rounded-full bg-primaria text-sm font-bold text-primaria-sobre">
+            TLC
+          </span>
+          <span className="hidden sm:inline">{SITE_NOME}</span>
+        </Link>
+
+        <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
+          {MENU.map((i) => (
+            <Link key={i.href} href={i.href} className="rounded-lg px-3 py-2 text-base text-texto hover:bg-superficie">
+              {i.rotulo}
+            </Link>
+          ))}
+        </nav>
+
+        <div className="flex items-center gap-2">
+          <a href={PORTAL_URL} className="btn-primario min-h-[44px] px-4">
+            Entrar
+          </a>
+          {/* Menu do celular sem JavaScript: <details> nativo */}
+          <details className="relative lg:hidden">
+            <summary
+              aria-label="Abrir menu"
+              className="grid h-11 w-11 cursor-pointer list-none place-items-center rounded-cartao border border-borda [&::-webkit-details-marker]:hidden"
+            >
+              <Menu size={22} aria-hidden />
+            </summary>
+            <nav aria-label="Principal (celular)" className="cartao absolute right-0 mt-2 w-56 p-2">
+              {MENU.map((i) => (
+                <Link key={i.href} href={i.href} className="block rounded-lg px-3 py-3 text-base hover:bg-superficie">
+                  {i.rotulo}
+                </Link>
+              ))}
+            </nav>
+          </details>
+        </div>
+      </div>
+    </header>
+  );
+}
