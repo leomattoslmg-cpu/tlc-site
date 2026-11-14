@@ -1,0 +1,2398 @@
+openapi: 3.1.0
+info:
+  title: API TLC Ponta Porã - MS
+  version: 1.0.0
+  summary: API única do site, do portal do membro, do painel administrativo e do aplicativo.
+  description: |
+    Gerada a partir da seção "12. Estrutura da API REST" da especificação da plataforma.
+
+    **Convenções**
+    - JSON em `snake_case` sobre HTTPS; datas em ISO 8601 com fuso.
+    - Autenticação por token Bearer (JWT de acesso, 15 minutos) com refresh token rotativo.
+    - Rotas `/public/*` não exigem login.
+    - Cada operação declara em `x-permissao` a permissão `recurso:acao` exigida.
+      A API é quem decide o acesso; esconder botões nas telas é só conforto visual.
+    - **CPF:** só quem tem `membros:ver_cpf` (Super Administrador e Administrador) e o próprio
+      titular recebem o campo `cpf`; os demais recebem apenas `cpf_mascarado`.
+    - **Listas:** `?page` e `?per_page` (painel) ou `?cursor` (feeds do app). A resposta
+      traz `data` e `meta`.
+    - **Erros:** formato RFC 9457 (`application/problem+json`).
+    - **Repetição segura:** o cabeçalho `Idempotency-Key` é aceito em inscrição e check-in.
+  contact:
+    name: TLC Ponta Porã - MS
+servers:
+  - url: https://api.exemplo.org/v1
+    description: Produção (troque pelo domínio real)
+  - url: https://api-homolog.exemplo.org/v1
+    description: Homologação
+security:
+  - bearerAuth: []
+tags:
+  - name: Autenticação
+  - name: Conta
+  - name: Usuários
+  - name: Membros
+  - name: Cadastros
+  - name: Avisos
+  - name: Eventos
+  - name: Galeria
+  - name: Documentos
+  - name: Arquivos
+  - name: Notificações
+  - name: Dashboard
+  - name: Site
+  - name: Sistema
+
+paths:
+  # ---------------------------------------------------------------- Autenticação
+  /auth/login:
+    post:
+      tags: [Autenticação]
+      summary: Entra com e-mail ou CPF
+      description: O campo `identificador` aceita e-mail ou CPF (11 dígitos). Após 5 falhas a conta é bloqueada por 15 minutos.
+      operationId: login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Sessão criada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/refresh:
+    post:
+      tags: [Autenticação]
+      summary: Troca o refresh token por um novo par de tokens
+      operationId: refreshToken
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token: { type: string }
+      responses:
+        '200':
+          description: Novo par de tokens
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/TokenPair' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/logout:
+    post:
+      tags: [Autenticação]
+      summary: Revoga a sessão atual
+      operationId: logout
+      responses:
+        '204': { description: Sessão encerrada }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+  /auth/cadastro:
+    post:
+      tags: [Autenticação]
+      summary: Cadastro pelo site; cria usuário pendente de aprovação
+      description: A conta só vira acesso depois que a Secretaria aprova (RN-AUT-08). Idade mínima de 13 anos (RN-MEM-09).
+      operationId: cadastrar
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/CadastroRequest' }
+      responses:
+        '202':
+          description: Cadastro recebido e aguardando aprovação
+        '409': { $ref: '#/components/responses/Conflict' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/senha/esqueci:
+    post:
+      tags: [Autenticação]
+      summary: Envia o link de recuperação de senha
+      description: A resposta é sempre a mesma, exista ou não a conta (RN-AUT-05).
+      operationId: esqueciSenha
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [identificador]
+              properties:
+                identificador: { type: string, description: E-mail ou CPF }
+      responses:
+        '202': { description: Se a conta existir, o e-mail foi enviado }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /auth/senha/redefinir:
+    post:
+      tags: [Autenticação]
+      summary: Define a nova senha com o token do link
+      operationId: redefinirSenha
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, nova_senha]
+              properties:
+                token: { type: string }
+                nova_senha: { $ref: '#/components/schemas/Senha' }
+      responses:
+        '204': { description: Senha alterada; as sessões antigas foram encerradas }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /auth/convite/aceitar:
+    post:
+      tags: [Autenticação]
+      summary: Cria a senha a partir do convite
+      description: O convite vale 7 dias (RN-AUT-09).
+      operationId: aceitarConvite
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, senha]
+              properties:
+                token: { type: string }
+                senha: { $ref: '#/components/schemas/Senha' }
+                aceite_termo: { type: boolean }
+      responses:
+        '200':
+          description: Conta ativada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/LoginResponse' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ---------------------------------------------------------------- Conta
+  /me:
+    get:
+      tags: [Conta]
+      summary: Dados do usuário, membro vinculado e perfis
+      operationId: getMe
+      responses:
+        '200':
+          description: Usuário autenticado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '401': { $ref: '#/components/responses/Unauthorized' }
+    patch:
+      tags: [Conta]
+      summary: Edita telefone, WhatsApp, e-mail, endereço e foto
+      description: Nome, CPF e igreja mudam pela Secretaria (RN-MEM-07).
+      operationId: updateMe
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MeUpdate' }
+      responses:
+        '200':
+          description: Dados atualizados
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Me' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /me/senha:
+    put:
+      tags: [Conta]
+      summary: Troca a senha (pede a atual)
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [senha_atual, nova_senha]
+              properties:
+                senha_atual: { type: string, format: password }
+                nova_senha: { $ref: '#/components/schemas/Senha' }
+      responses:
+        '204': { description: Senha trocada; as outras sessões foram encerradas }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /me/permissoes:
+    get:
+      tags: [Conta]
+      summary: Lista de permissões `recurso:acao` do usuário
+      operationId: getMyPermissions
+      responses:
+        '200':
+          description: Permissões efetivas (soma dos perfis)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { type: string, examples: ['avisos:publicar'] }
+  /me/inscricoes:
+    get:
+      tags: [Eventos]
+      summary: Eventos em que o usuário está inscrito
+      operationId: listMyRegistrations
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Inscrições do usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Inscricao' }
+                  meta: { $ref: '#/components/schemas/CursorMeta' }
+  /me/eventos/{id}/qr:
+    get:
+      tags: [Eventos]
+      summary: QR Code do usuário no evento
+      operationId: getMyEventQr
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '200':
+          description: Token do QR Code (funciona sem internet depois de baixado)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  qr_token: { type: string }
+                  valido_ate: { type: string, format: date-time }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /me/notificacoes:
+    get:
+      tags: [Notificações]
+      summary: Caixa de notificações
+      operationId: listMyNotifications
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - name: nao_lidas
+          in: query
+          schema: { type: boolean }
+      responses:
+        '200':
+          description: Notificações do usuário
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Notificacao' }
+                  meta: { $ref: '#/components/schemas/CursorMeta' }
+  /me/notificacoes/{id}/lida:
+    patch:
+      tags: [Notificações]
+      summary: Marca uma notificação como lida
+      operationId: markNotificationRead
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '204': { description: Marcada como lida }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /me/notificacoes/marcar-todas-lidas:
+    post:
+      tags: [Notificações]
+      summary: Marca todas como lidas
+      operationId: markAllNotificationsRead
+      responses:
+        '204': { description: Todas marcadas como lidas }
+  /me/dispositivos:
+    post:
+      tags: [Notificações]
+      summary: Registra o token de push do aparelho
+      operationId: registerDevice
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DispositivoInput' }
+      responses:
+        '201':
+          description: Aparelho registrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Dispositivo' }
+    delete:
+      tags: [Notificações]
+      summary: Remove o token de push do aparelho
+      operationId: unregisterDevice
+      parameters:
+        - name: push_token
+          in: query
+          required: true
+          schema: { type: string }
+      responses:
+        '204': { description: Aparelho removido }
+  /me/preferencias-notificacao:
+    get:
+      tags: [Notificações]
+      summary: Lê as preferências de notificação
+      operationId: getNotificationPreferences
+      responses:
+        '200':
+          description: Preferências por tipo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/PreferenciaNotificacao' }
+    put:
+      tags: [Notificações]
+      summary: Grava as preferências de notificação
+      description: Avisos Importantes e mensagens de segurança da conta não podem ser desligados (RN-NOT-04).
+      operationId: setNotificationPreferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data:
+                  type: array
+                  items: { $ref: '#/components/schemas/PreferenciaNotificacao' }
+      responses:
+        '204': { description: Preferências gravadas }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ---------------------------------------------------------------- Usuários
+  /usuarios:
+    get:
+      tags: [Usuários]
+      summary: Lista usuários com filtros
+      operationId: listUsers
+      x-permissao: usuarios:ler
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PerPage' }
+        - { $ref: '#/components/parameters/Q' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/UsuarioStatus' }
+      responses:
+        '200':
+          description: Página de usuários
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Usuario' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /usuarios/{id}/perfis:
+    put:
+      tags: [Usuários]
+      summary: Define os perfis do usuário
+      description: Cada perfil só atribui perfis de nível inferior ao seu (RN-PER-02). O último Super Administrador não pode ser removido (RN-PER-03).
+      operationId: setUserProfiles
+      x-permissao: usuarios:atribuir_perfil
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [perfis]
+              properties:
+                perfis:
+                  type: array
+                  items: { $ref: '#/components/schemas/PerfilCodigo' }
+      responses:
+        '200':
+          description: Usuário atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /usuarios/{id}/status:
+    patch:
+      tags: [Usuários]
+      summary: Aprova, bloqueia ou inativa
+      operationId: setUserStatus
+      x-permissao: usuarios:aprovar
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/UsuarioStatus' }
+                membro_id:
+                  type: string
+                  format: uuid
+                  description: Vincula o usuário a um membro ao aprovar
+                motivo:
+                  type: string
+                  description: Enviado ao solicitante quando o cadastro é recusado
+      responses:
+        '200':
+          description: Usuário atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Usuario' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /usuarios/{id}/convite:
+    post:
+      tags: [Usuários]
+      summary: Reenvia o convite de acesso
+      operationId: resendInvite
+      x-permissao: usuarios:aprovar
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '202': { description: Convite reenviado }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ---------------------------------------------------------------- Membros
+  /membros:
+    get:
+      tags: [Membros]
+      summary: Busca membros
+      operationId: listMembers
+      x-permissao: membros:ler
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PerPage' }
+        - name: q
+          in: query
+          description: Nome ou CPF completo (a busca por CPF usa o hash)
+          schema: { type: string }
+        - name: igreja_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: turma_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/MembroStatus' }
+        - $ref: '#/components/parameters/Sort'
+      responses:
+        '200':
+          description: Página de membros (CPF mascarado)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Membro' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    post:
+      tags: [Membros]
+      summary: Cadastra membro
+      description: A Secretaria digita o CPF, mas depois só o vê mascarado (RN-MEM-12).
+      operationId: createMember
+      x-permissao: membros:criar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MembroInput' }
+      responses:
+        '201':
+          description: Membro criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Membro' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: CPF já cadastrado; traz o id do cadastro existente
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /membros/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Membros]
+      summary: Perfil individual
+      description: O campo `cpf` só vem com a permissão `membros:ver_cpf` (ou para o próprio titular); cada abertura por outra pessoa é registrada na auditoria (RN-MEM-11).
+      operationId: getMember
+      x-permissao: membros:ler
+      responses:
+        '200':
+          description: Perfil do membro
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Membro' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Membros]
+      summary: Edita dados e observações
+      description: Mudar o CPF exige Administrador ou Super Administrador. Mudar nome ou igreja gera linha no histórico.
+      operationId: updateMember
+      x-permissao: membros:editar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/MembroUpdate' }
+      responses:
+        '200':
+          description: Membro atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Membro' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+    delete:
+      tags: [Membros]
+      summary: Anonimiza o membro
+      description: Exclusão definitiva só do Super Administrador; anonimiza os dados pessoais e fica na auditoria (RN-MEM-04).
+      operationId: anonymizeMember
+      x-permissao: membros:excluir
+      responses:
+        '204': { description: Membro anonimizado }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /membros/{id}/historico:
+    get:
+      tags: [Membros]
+      summary: Linha do tempo do membro
+      operationId: getMemberHistory
+      x-permissao: membros:ler
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Histórico, do mais recente para o mais antigo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/HistoricoItem' }
+                  meta: { $ref: '#/components/schemas/CursorMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+
+  # ---------------------------------------------------------------- Cadastros
+  /igrejas:
+    get:
+      tags: [Cadastros]
+      summary: Lista igrejas
+      operationId: listChurches
+      x-permissao: membros:ler
+      responses:
+        '200':
+          description: Igrejas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Igreja' }
+    post:
+      tags: [Cadastros]
+      summary: Cria igreja
+      operationId: createChurch
+      x-permissao: cadastros:gerir
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IgrejaInput' }
+      responses:
+        '201':
+          description: Igreja criada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Igreja' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /igrejas/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      tags: [Cadastros]
+      summary: Edita igreja
+      operationId: updateChurch
+      x-permissao: cadastros:gerir
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/IgrejaInput' }
+      responses:
+        '200':
+          description: Igreja atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Igreja' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Cadastros]
+      summary: Remove igreja
+      description: Igreja com membros só pode ser inativada, nunca apagada.
+      operationId: deleteChurch
+      x-permissao: cadastros:gerir
+      responses:
+        '204': { description: Igreja removida }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /turmas:
+    get:
+      tags: [Cadastros]
+      summary: Lista turmas
+      operationId: listClasses
+      x-permissao: membros:ler
+      responses:
+        '200':
+          description: Turmas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Turma' }
+    post:
+      tags: [Cadastros]
+      summary: Cria turma
+      operationId: createClass
+      x-permissao: cadastros:gerir
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TurmaInput' }
+      responses:
+        '201':
+          description: Turma criada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Turma' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /turmas/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      tags: [Cadastros]
+      summary: Edita turma
+      operationId: updateClass
+      x-permissao: cadastros:gerir
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TurmaInput' }
+      responses:
+        '200':
+          description: Turma atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Turma' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Cadastros]
+      summary: Remove turma
+      operationId: deleteClass
+      x-permissao: cadastros:gerir
+      responses:
+        '204': { description: Turma removida }
+        '409': { $ref: '#/components/responses/Conflict' }
+
+  # ---------------------------------------------------------------- Avisos
+  /avisos:
+    get:
+      tags: [Avisos]
+      summary: Feed do mural
+      operationId: listNotices
+      x-permissao: avisos:ler
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - name: categoria_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: status
+          in: query
+          description: Rascunhos e agendados só aparecem para quem publica
+          schema: { $ref: '#/components/schemas/AvisoStatus' }
+      responses:
+        '200':
+          description: Avisos, fixados primeiro
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Aviso' }
+                  meta: { $ref: '#/components/schemas/CursorMeta' }
+    post:
+      tags: [Avisos]
+      summary: Cria aviso (rascunho, agendado ou publicado)
+      operationId: createNotice
+      x-permissao: avisos:publicar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AvisoInput' }
+      responses:
+        '201':
+          description: Aviso criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Aviso' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /avisos/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Avisos]
+      summary: Detalhe com contagem de reações e comentários
+      operationId: getNotice
+      x-permissao: avisos:ler
+      responses:
+        '200':
+          description: Aviso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Aviso' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Avisos]
+      summary: Edita aviso
+      operationId: updateNotice
+      x-permissao: avisos:publicar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AvisoInput' }
+      responses:
+        '200':
+          description: Aviso atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Aviso' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Avisos]
+      summary: Arquiva o aviso
+      description: A exclusão definitiva é só do Administrador (`avisos:excluir`).
+      operationId: archiveNotice
+      x-permissao: avisos:publicar
+      parameters:
+        - name: definitivo
+          in: query
+          description: Exclusão definitiva; exige `avisos:excluir`
+          schema: { type: boolean, default: false }
+      responses:
+        '204': { description: Aviso arquivado ou excluído }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /avisos/{id}/leitura:
+    post:
+      tags: [Avisos]
+      summary: Marca como lido
+      operationId: markNoticeRead
+      x-permissao: avisos:ler
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '204': { description: Leitura registrada }
+  /avisos/{id}/comentarios:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Avisos]
+      summary: Lista comentários
+      operationId: listComments
+      x-permissao: avisos:comentar
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Comentários (respostas de um nível)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Comentario' }
+                  meta: { $ref: '#/components/schemas/CursorMeta' }
+    post:
+      tags: [Avisos]
+      summary: Comenta
+      operationId: createComment
+      x-permissao: avisos:comentar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [texto]
+              properties:
+                texto: { type: string, minLength: 1, maxLength: 1000 }
+                parent_id:
+                  type: string
+                  format: uuid
+                  description: Responde a outro comentário
+      responses:
+        '201':
+          description: Comentário criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comentario' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /comentarios/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    patch:
+      tags: [Avisos]
+      summary: Edita o próprio comentário ou oculta (moderação)
+      description: O autor edita por 10 minutos (RN-AVI-05). A moderação exige `comentarios:moderar`.
+      operationId: updateComment
+      x-permissao: próprio ou comentarios:moderar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                texto: { type: string, minLength: 1, maxLength: 1000 }
+                status: { $ref: '#/components/schemas/ComentarioStatus' }
+      responses:
+        '200':
+          description: Comentário atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Comentario' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+    delete:
+      tags: [Avisos]
+      summary: Apaga o próprio comentário ou remove (moderação)
+      operationId: deleteComment
+      x-permissao: próprio ou comentarios:moderar
+      responses:
+        '204': { description: Comentário removido }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /avisos/{id}/reacao:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    put:
+      tags: [Avisos]
+      summary: Define a reação do usuário
+      description: Uma reação por pessoa; enviar outro tipo troca a reação (RN-AVI-06).
+      operationId: setReaction
+      x-permissao: avisos:comentar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo]
+              properties:
+                tipo: { $ref: '#/components/schemas/ReacaoTipo' }
+      responses:
+        '204': { description: Reação registrada }
+    delete:
+      tags: [Avisos]
+      summary: Remove a reação do usuário
+      operationId: removeReaction
+      x-permissao: avisos:comentar
+      responses:
+        '204': { description: Reação removida }
+  /categorias-aviso:
+    get:
+      tags: [Avisos]
+      summary: Categorias disponíveis
+      operationId: listNoticeCategories
+      x-permissao: avisos:ler
+      responses:
+        '200':
+          description: Geral, Eventos, Coordenação e Importante
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/CategoriaAviso' }
+
+  # ---------------------------------------------------------------- Eventos
+  /eventos:
+    get:
+      tags: [Eventos]
+      summary: Lista eventos
+      operationId: listEvents
+      x-permissao: eventos:ler
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PerPage' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/EventoStatus' }
+        - name: de
+          in: query
+          description: Início do período
+          schema: { type: string, format: date-time }
+        - name: ate
+          in: query
+          description: Fim do período
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Página de eventos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Evento' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+    post:
+      tags: [Eventos]
+      summary: Cria evento
+      operationId: createEvent
+      x-permissao: eventos:criar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventoInput' }
+      responses:
+        '201':
+          description: Evento criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Evento' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /eventos/{id}:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Eventos]
+      summary: Detalhe do evento
+      operationId: getEvent
+      x-permissao: eventos:ler
+      responses:
+        '200':
+          description: Evento
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Evento' }
+        '404': { $ref: '#/components/responses/NotFound' }
+    patch:
+      tags: [Eventos]
+      summary: Edita dados e status
+      description: Mudar data ou local notifica os inscritos com prioridade alta.
+      operationId: updateEvent
+      x-permissao: eventos:editar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventoInput' }
+      responses:
+        '200':
+          description: Evento atualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Evento' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /eventos/{id}/cancelar:
+    post:
+      tags: [Eventos]
+      summary: Cancela o evento e notifica os inscritos
+      operationId: cancelEvent
+      x-permissao: eventos:editar
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                motivo: { type: string }
+      responses:
+        '200':
+          description: Evento cancelado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Evento' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /eventos/{id}/inscricoes:
+    post:
+      tags: [Eventos]
+      summary: Inscreve o usuário (vaga ou lista de espera)
+      operationId: registerForEvent
+      x-permissao: eventos:inscrever
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      responses:
+        '201':
+          description: Inscrição confirmada ou na lista de espera
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Inscricao' }
+        '409': { $ref: '#/components/responses/Conflict' }
+  /eventos/{id}/inscricoes/me:
+    delete:
+      tags: [Eventos]
+      summary: Cancela a própria inscrição
+      description: Libera a vaga e promove o primeiro da lista de espera (RN-EVE-03).
+      operationId: cancelMyRegistration
+      x-permissao: eventos:inscrever
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '204': { description: Inscrição cancelada }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /eventos/{id}/participantes:
+    get:
+      tags: [Eventos]
+      summary: Inscritos, lista de espera e presentes
+      operationId: listEventParticipants
+      x-permissao: eventos:participantes
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PerPage' }
+        - name: situacao
+          in: query
+          schema:
+            type: string
+            enum: [confirmada, lista_espera, presente, ausente]
+      responses:
+        '200':
+          description: Participantes (CPF mascarado)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Participante' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /eventos/{id}/checkins:
+    post:
+      tags: [Eventos]
+      summary: Check-in por QR Code ou manual
+      description: Vale de 2 horas antes do início até 2 horas depois do fim e só uma vez por membro (RN-EVE-05). O check-in manual é da Secretaria e níveis acima (RN-EVE-06).
+      operationId: checkIn
+      x-permissao: eventos:checkin
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - { $ref: '#/components/parameters/IdempotencyKey' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              oneOf:
+                - type: object
+                  required: [qr_token]
+                  properties:
+                    qr_token: { type: string }
+                - type: object
+                  required: [membro_id]
+                  properties:
+                    membro_id: { type: string, format: uuid }
+      responses:
+        '201':
+          description: Presença registrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Checkin' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '409':
+          description: Presença já registrada, com o horário do primeiro check-in
+          content:
+            application/problem+json:
+              schema: { $ref: '#/components/schemas/Problem' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /eventos/{id}/presenca/exportar:
+    get:
+      tags: [Eventos]
+      summary: Exporta a lista de presença em CSV ou PDF
+      description: Sem CPF para todos os perfis exceto quem tem `membros:ver_cpf`.
+      operationId: exportAttendance
+      x-permissao: eventos:exportar
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+        - name: formato
+          in: query
+          schema:
+            type: string
+            enum: [csv, pdf]
+            default: csv
+      responses:
+        '200':
+          description: Arquivo da lista de presença
+          content:
+            text/csv:
+              schema: { type: string }
+            application/pdf:
+              schema: { type: string, format: binary }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ---------------------------------------------------------------- Galeria
+  /albuns:
+    get:
+      tags: [Galeria]
+      summary: Lista álbuns visíveis ao usuário
+      operationId: listAlbums
+      x-permissao: galeria:ler
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+        - name: evento_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Álbuns
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Album' }
+                  meta: { $ref: '#/components/schemas/CursorMeta' }
+    post:
+      tags: [Galeria]
+      summary: Cria álbum (avulso ou de evento)
+      description: Álbum público exige a confirmação de autorização de imagem (RN-GAL-02).
+      operationId: createAlbum
+      x-permissao: galeria:enviar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/AlbumInput' }
+      responses:
+        '201':
+          description: Álbum criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Album' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /albuns/{id}:
+    delete:
+      tags: [Galeria]
+      summary: Remove álbum
+      operationId: deleteAlbum
+      x-permissao: galeria:excluir ou galeria:excluir_proprio
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '204': { description: Álbum removido }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /albuns/{id}/fotos:
+    parameters:
+      - { $ref: '#/components/parameters/Id' }
+    get:
+      tags: [Galeria]
+      summary: Fotos do álbum, paginadas
+      operationId: listAlbumPhotos
+      x-permissao: galeria:ler
+      parameters:
+        - { $ref: '#/components/parameters/Cursor' }
+      responses:
+        '200':
+          description: Fotos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Foto' }
+                  meta: { $ref: '#/components/schemas/CursorMeta' }
+    post:
+      tags: [Galeria]
+      summary: Registra fotos já enviadas ao storage
+      description: Até 50 fotos por lote (RN-GAL-01). O sistema gera miniaturas e remove a localização (EXIF).
+      operationId: addPhotos
+      x-permissao: galeria:enviar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [fotos]
+              properties:
+                fotos:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [arquivo_id]
+                    properties:
+                      arquivo_id: { type: string, format: uuid }
+                      legenda: { type: string }
+      responses:
+        '201':
+          description: Fotos registradas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Foto' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /fotos/{id}:
+    delete:
+      tags: [Galeria]
+      summary: Remove foto
+      operationId: deletePhoto
+      x-permissao: galeria:excluir ou galeria:excluir_proprio
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '204': { description: Foto removida }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ---------------------------------------------------------------- Documentos
+  /documentos:
+    get:
+      tags: [Documentos]
+      summary: Lista documentos, já filtrados pelo perfil
+      operationId: listDocuments
+      x-permissao: documentos:ler
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PerPage' }
+        - { $ref: '#/components/parameters/Q' }
+        - name: categoria_id
+          in: query
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Página de documentos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Documento' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+    post:
+      tags: [Documentos]
+      summary: Cadastra documento com perfis permitidos
+      operationId: createDocument
+      x-permissao: documentos:gerir
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/DocumentoInput' }
+      responses:
+        '201':
+          description: Documento criado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Documento' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /documentos/{id}/download:
+    get:
+      tags: [Documentos]
+      summary: URL assinada de curta duração; registra o download
+      operationId: downloadDocument
+      x-permissao: documentos:ler
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '200':
+          description: URL de download
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  url: { type: string, format: uri }
+                  expira_em: { type: string, format: date-time }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /documentos/{id}/arquivo:
+    put:
+      tags: [Documentos]
+      summary: Envia nova versão do arquivo
+      description: Aumenta a versão e notifica quem já baixou (RN-DOC-03).
+      operationId: replaceDocumentFile
+      x-permissao: documentos:gerir
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [arquivo_id]
+              properties:
+                arquivo_id: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Documento com a nova versão
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Documento' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ---------------------------------------------------------------- Arquivos
+  /arquivos/upload-url:
+    post:
+      tags: [Arquivos]
+      summary: Pede URL pré-assinada de envio direto ao storage
+      description: Fotos JPG, PNG, WebP ou HEIC até 15 MB; PDFs até 25 MB.
+      operationId: requestUploadUrl
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nome_original, mime, tamanho_bytes]
+              properties:
+                nome_original: { type: string }
+                mime:
+                  type: string
+                  enum: [image/jpeg, image/png, image/webp, image/heic, application/pdf]
+                tamanho_bytes: { type: integer, minimum: 1 }
+      responses:
+        '201':
+          description: URL de envio
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/UploadUrl' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+  /arquivos/{id}/confirmar:
+    post:
+      tags: [Arquivos]
+      summary: Confirma o envio e valida tipo e tamanho
+      operationId: confirmUpload
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      responses:
+        '200':
+          description: Arquivo confirmado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Arquivo' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ---------------------------------------------------------------- Notificações (painel)
+  /notificacoes:
+    post:
+      tags: [Notificações]
+      summary: Envia notificação avulsa a um segmento
+      description: Comunicados para mais de 50 pessoas pedem confirmação extra e entram na auditoria.
+      operationId: sendNotification
+      x-permissao: notificacoes:enviar
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NotificacaoInput' }
+      responses:
+        '202':
+          description: Notificação aceita para envio
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string, format: uuid }
+                  alcance: { type: integer, description: Pessoas que serão alcançadas }
+        '403': { $ref: '#/components/responses/Forbidden' }
+        '422': { $ref: '#/components/responses/ValidationError' }
+
+  # ---------------------------------------------------------------- Dashboard
+  /dashboard/resumo:
+    get:
+      tags: [Dashboard]
+      summary: Totais de membros, eventos, usuários ativos e últimos avisos
+      operationId: getDashboardSummary
+      x-permissao: dashboard:ler
+      responses:
+        '200':
+          description: Indicadores do painel
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DashboardResumo' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ---------------------------------------------------------------- Site e contato
+  /public/paginas/{slug}:
+    get:
+      tags: [Site]
+      summary: Conteúdo de Quem Somos e História do TLC
+      operationId: getPublicPage
+      security: []
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string, examples: [quem-somos] }
+      responses:
+        '200':
+          description: Página publicada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginaSite' }
+        '404': { $ref: '#/components/responses/NotFound' }
+  /public/eventos:
+    get:
+      tags: [Site]
+      summary: Eventos marcados como públicos
+      operationId: listPublicEvents
+      security: []
+      responses:
+        '200':
+          description: Eventos públicos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Evento' }
+  /public/albuns:
+    get:
+      tags: [Site]
+      summary: Álbuns públicos
+      operationId: listPublicAlbums
+      security: []
+      responses:
+        '200':
+          description: Álbuns públicos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Album' }
+  /public/contato:
+    post:
+      tags: [Site]
+      summary: Recebe o formulário de contato
+      operationId: sendContactMessage
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/ContatoInput' }
+      responses:
+        '202': { description: Mensagem recebida }
+        '422': { $ref: '#/components/responses/ValidationError' }
+        '429': { $ref: '#/components/responses/TooManyRequests' }
+  /mensagens-contato:
+    get:
+      tags: [Site]
+      summary: Caixa de mensagens do painel
+      operationId: listContactMessages
+      x-permissao: contato:responder
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PerPage' }
+        - name: status
+          in: query
+          schema: { $ref: '#/components/schemas/ContatoStatus' }
+      responses:
+        '200':
+          description: Mensagens
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/MensagemContato' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /mensagens-contato/{id}:
+    patch:
+      tags: [Site]
+      summary: Atualiza o andamento da mensagem
+      operationId: updateContactMessage
+      x-permissao: contato:responder
+      parameters:
+        - { $ref: '#/components/parameters/Id' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { $ref: '#/components/schemas/ContatoStatus' }
+      responses:
+        '200':
+          description: Mensagem atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MensagemContato' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /paginas-site/{slug}:
+    put:
+      tags: [Site]
+      summary: Edita página do site
+      operationId: updateSitePage
+      x-permissao: site:editar
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [titulo, conteudo]
+              properties:
+                titulo: { type: string }
+                conteudo: { type: string, description: HTML sanitizado ou Markdown }
+                publicado: { type: boolean }
+      responses:
+        '200':
+          description: Página atualizada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/PaginaSite' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+
+  # ---------------------------------------------------------------- Sistema
+  /auditoria:
+    get:
+      tags: [Sistema]
+      summary: Consulta a trilha de auditoria
+      operationId: listAuditTrail
+      x-permissao: auditoria:ler
+      parameters:
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/PerPage' }
+        - name: usuario_id
+          in: query
+          schema: { type: string, format: uuid }
+        - name: entidade
+          in: query
+          schema: { type: string }
+        - name: de
+          in: query
+          schema: { type: string, format: date-time }
+        - name: ate
+          in: query
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: Registros de auditoria
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items: { $ref: '#/components/schemas/Auditoria' }
+                  meta: { $ref: '#/components/schemas/PageMeta' }
+        '403': { $ref: '#/components/responses/Forbidden' }
+  /health:
+    get:
+      tags: [Sistema]
+      summary: Verificação de saúde do serviço
+      operationId: health
+      security: []
+      responses:
+        '200':
+          description: Serviço no ar
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, examples: [ok] }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    Page:
+      name: page
+      in: query
+      schema: { type: integer, minimum: 1, default: 1 }
+    PerPage:
+      name: per_page
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+    Cursor:
+      name: cursor
+      in: query
+      description: Cursor devolvido em `meta.next_cursor`
+      schema: { type: string }
+    Q:
+      name: q
+      in: query
+      description: Texto de busca
+      schema: { type: string }
+    Sort:
+      name: sort
+      in: query
+      description: 'Campo de ordenação; prefixo `-` para decrescente (ex.: `-criado_em`)'
+      schema: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Permite ao app reenviar a requisição sem duplicar o efeito
+      schema: { type: string, maxLength: 128 }
+
+  responses:
+    BadRequest:
+      description: Requisição inválida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Unauthorized:
+      description: Não autenticado ou credenciais inválidas
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Forbidden:
+      description: O perfil do usuário não tem a permissão exigida
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    NotFound:
+      description: Recurso não encontrado
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    Conflict:
+      description: Conflito com o estado atual do recurso
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    ValidationError:
+      description: Dados inválidos
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+    TooManyRequests:
+      description: Limite de requisições excedido
+      headers:
+        Retry-After:
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+
+  schemas:
+    # ---------------------------------------------------------------- Comuns
+    Problem:
+      type: object
+      description: Erro no formato RFC 9457
+      required: [type, title, status]
+      properties:
+        type: { type: string, format: uri }
+        title: { type: string, examples: [Dados inválidos] }
+        status: { type: integer, examples: [422] }
+        code: { type: string, examples: [VALIDATION_ERROR] }
+        detail: { type: string }
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              campo: { type: string, examples: [cpf] }
+              mensagem: { type: string, examples: [CPF inválido] }
+    PageMeta:
+      type: object
+      properties:
+        page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+    CursorMeta:
+      type: object
+      properties:
+        next_cursor: { type: [string, 'null'] }
+    Senha:
+      type: string
+      format: password
+      minLength: 8
+      description: No mínimo 8 caracteres, com ao menos 1 letra e 1 número (RN-AUT-03)
+    Cpf:
+      type: string
+      pattern: '^\d{11}$'
+      description: Somente dígitos; validado pelos dígitos verificadores
+    Telefone:
+      type: string
+      pattern: '^\+[1-9]\d{7,14}$'
+      description: Formato E.164
+      examples: ['+5567999990001']
+    Endereco:
+      type: object
+      properties:
+        cep: { type: string, examples: ['79900000'] }
+        logradouro: { type: string }
+        numero: { type: string }
+        complemento: { type: string }
+        bairro: { type: string }
+        cidade: { type: string }
+        uf: { type: string, minLength: 2, maxLength: 2 }
+
+    # ---------------------------------------------------------------- Autenticação e conta
+    LoginRequest:
+      type: object
+      required: [identificador, senha]
+      properties:
+        identificador:
+          type: string
+          description: E-mail ou CPF (somente dígitos)
+          examples: ['12345678909']
+        senha: { type: string, format: password }
+        dispositivo:
+          type: object
+          properties:
+            plataforma: { type: string, enum: [android, ios, web] }
+            app_versao: { type: string }
+    TokenPair:
+      type: object
+      properties:
+        access_token: { type: string }
+        refresh_token: { type: string }
+        expira_em: { type: integer, description: Validade do token de acesso em segundos, examples: [900] }
+    LoginResponse:
+      allOf:
+        - $ref: '#/components/schemas/TokenPair'
+        - type: object
+          properties:
+            usuario: { $ref: '#/components/schemas/UsuarioResumo' }
+    CadastroRequest:
+      type: object
+      required: [nome_completo, cpf, data_nascimento, email, igreja_id, senha, aceite_termo]
+      properties:
+        nome_completo: { type: string }
+        cpf: { $ref: '#/components/schemas/Cpf' }
+        data_nascimento:
+          type: string
+          format: date
+          description: O TLC atende a partir de 13 anos
+        telefone: { $ref: '#/components/schemas/Telefone' }
+        whatsapp: { $ref: '#/components/schemas/Telefone' }
+        email: { type: string, format: email }
+        igreja_id: { type: string, format: uuid }
+        senha: { $ref: '#/components/schemas/Senha' }
+        aceite_termo:
+          type: boolean
+          const: true
+          description: Aceite do termo de privacidade (LGPD)
+    PerfilCodigo:
+      type: string
+      enum: [super_admin, admin, coordenador, secretaria, membro, visitante]
+    UsuarioStatus:
+      type: string
+      enum: [pendente, ativo, bloqueado, inativo]
+    UsuarioResumo:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nome: { type: string }
+        perfis:
+          type: array
+          items: { $ref: '#/components/schemas/PerfilCodigo' }
+    Usuario:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        email: { type: string, format: email }
+        status: { $ref: '#/components/schemas/UsuarioStatus' }
+        perfis:
+          type: array
+          items: { $ref: '#/components/schemas/PerfilCodigo' }
+        membro_id: { type: [string, 'null'], format: uuid }
+        ultimo_login_em: { type: [string, 'null'], format: date-time }
+        criado_em: { type: string, format: date-time }
+    Me:
+      type: object
+      properties:
+        usuario: { $ref: '#/components/schemas/Usuario' }
+        membro:
+          oneOf:
+            - $ref: '#/components/schemas/Membro'
+            - type: 'null'
+    MeUpdate:
+      type: object
+      properties:
+        telefone: { $ref: '#/components/schemas/Telefone' }
+        whatsapp: { $ref: '#/components/schemas/Telefone' }
+        email: { type: string, format: email }
+        endereco: { $ref: '#/components/schemas/Endereco' }
+        foto_arquivo_id: { type: string, format: uuid }
+
+    # ---------------------------------------------------------------- Membros
+    MembroStatus:
+      type: string
+      enum: [ativo, inativo, pendente]
+    Membro:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nome_completo: { type: string }
+        foto_url: { type: [string, 'null'], format: uri }
+        cpf_mascarado:
+          type: [string, 'null']
+          description: Formato ***.456.789-**; nulo para menor sem CPF
+          examples: ['***.456.789-**']
+        cpf:
+          allOf:
+            - $ref: '#/components/schemas/Cpf'
+          description: Presente apenas para quem tem `membros:ver_cpf` e para o próprio titular
+        data_nascimento: { type: string, format: date }
+        telefone: { type: [string, 'null'] }
+        whatsapp: { type: [string, 'null'] }
+        email: { type: [string, 'null'], format: email }
+        endereco: { $ref: '#/components/schemas/Endereco' }
+        igreja: { $ref: '#/components/schemas/Igreja' }
+        observacoes:
+          type: [string, 'null']
+          description: Campo interno; só com `membros:ver_observacoes`
+        status: { $ref: '#/components/schemas/MembroStatus' }
+        data_ingresso: { type: [string, 'null'], format: date }
+        criado_em: { type: string, format: date-time }
+    MembroInput:
+      type: object
+      required: [nome_completo, data_nascimento, igreja_id]
+      description: CPF obrigatório; menor de 18 anos pode ser cadastrado sem CPF próprio (RN-MEM-10). Telefone ou WhatsApp obrigatório (RN-MEM-01).
+      properties:
+        nome_completo: { type: string }
+        cpf: { $ref: '#/components/schemas/Cpf' }
+        data_nascimento: { type: string, format: date }
+        telefone: { $ref: '#/components/schemas/Telefone' }
+        whatsapp: { $ref: '#/components/schemas/Telefone' }
+        email: { type: string, format: email }
+        endereco: { $ref: '#/components/schemas/Endereco' }
+        igreja_id: { type: string, format: uuid }
+        observacoes: { type: string }
+        foto_arquivo_id: { type: string, format: uuid }
+        convidar:
+          type: boolean
+          description: Envia convite de acesso por e-mail ou WhatsApp
+    MembroUpdate:
+      type: object
+      properties:
+        nome_completo: { type: string }
+        cpf:
+          allOf:
+            - $ref: '#/components/schemas/Cpf'
+          description: Só Administrador ou Super Administrador
+        data_nascimento: { type: string, format: date }
+        telefone: { $ref: '#/components/schemas/Telefone' }
+        whatsapp: { $ref: '#/components/schemas/Telefone' }
+        email: { type: string, format: email }
+        endereco: { $ref: '#/components/schemas/Endereco' }
+        igreja_id: { type: string, format: uuid }
+        observacoes: { type: string }
+        status: { $ref: '#/components/schemas/MembroStatus' }
+        foto_arquivo_id: { type: string, format: uuid }
+    HistoricoItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tipo:
+          type: string
+          enum: [cadastro, mudanca_igreja, turma, evento, perfil, status, observacao]
+        descricao: { type: string }
+        referencia_tipo: { type: [string, 'null'] }
+        referencia_id: { type: [string, 'null'], format: uuid }
+        criado_por: { type: [string, 'null'], format: uuid }
+        criado_em: { type: string, format: date-time }
+    Igreja:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nome: { type: string }
+        pastor: { type: [string, 'null'] }
+        cidade: { type: [string, 'null'] }
+        telefone: { type: [string, 'null'] }
+        ativa: { type: boolean }
+    IgrejaInput:
+      type: object
+      required: [nome]
+      properties:
+        nome: { type: string }
+        pastor: { type: string }
+        cidade: { type: string }
+        telefone: { type: string }
+        ativa: { type: boolean }
+    Turma:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nome: { type: string }
+        ano: { type: [integer, 'null'] }
+        data_inicio: { type: [string, 'null'], format: date }
+        data_fim: { type: [string, 'null'], format: date }
+        status: { type: string, enum: [planejada, em_andamento, encerrada] }
+    TurmaInput:
+      type: object
+      required: [nome]
+      properties:
+        nome: { type: string }
+        ano: { type: integer }
+        data_inicio: { type: string, format: date }
+        data_fim: { type: string, format: date }
+        status: { type: string, enum: [planejada, em_andamento, encerrada] }
+
+    # ---------------------------------------------------------------- Avisos
+    AvisoStatus:
+      type: string
+      enum: [rascunho, agendado, publicado, arquivado]
+    ReacaoTipo:
+      type: string
+      enum: [curtir, amem, orar, celebrar]
+    ComentarioStatus:
+      type: string
+      enum: [visivel, oculto, removido]
+    CategoriaAviso:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nome: { type: string, examples: [Importante] }
+        slug: { type: string, examples: [importante] }
+        cor: { type: string, examples: ['#B42318'] }
+    Aviso:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        titulo: { type: string }
+        conteudo: { type: string }
+        imagem_url: { type: [string, 'null'], format: uri }
+        categoria: { $ref: '#/components/schemas/CategoriaAviso' }
+        autor:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            nome: { type: string }
+        status: { $ref: '#/components/schemas/AvisoStatus' }
+        fixado: { type: boolean }
+        publico_alvo: { type: string, enum: [todos, membros, coordenacao] }
+        publicar_em: { type: [string, 'null'], format: date-time }
+        expira_em: { type: [string, 'null'], format: date-time }
+        editado_em: { type: [string, 'null'], format: date-time }
+        criado_em: { type: string, format: date-time }
+        reacoes:
+          type: object
+          description: Contagem por tipo de reação
+          additionalProperties: { type: integer }
+        minha_reacao:
+          oneOf:
+            - $ref: '#/components/schemas/ReacaoTipo'
+            - type: 'null'
+        total_comentarios: { type: integer }
+        lido: { type: boolean }
+    AvisoInput:
+      type: object
+      required: [titulo, conteudo, categoria_id]
+      properties:
+        titulo: { type: string }
+        conteudo: { type: string }
+        categoria_id: { type: string, format: uuid }
+        imagem_arquivo_id: { type: string, format: uuid }
+        publico_alvo: { type: string, enum: [todos, membros, coordenacao], default: todos }
+        fixado:
+          type: boolean
+          description: No máximo 3 avisos fixados (RN-AVI-03)
+        status:
+          type: string
+          enum: [rascunho, publicado]
+          default: publicado
+        publicar_em:
+          type: string
+          format: date-time
+          description: Data futura torna o aviso `agendado`
+        expira_em: { type: string, format: date-time }
+        enviar_push: { type: boolean, default: false }
+    Comentario:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        aviso_id: { type: string, format: uuid }
+        parent_id: { type: [string, 'null'], format: uuid }
+        autor:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            nome: { type: string }
+        texto: { type: string }
+        status: { $ref: '#/components/schemas/ComentarioStatus' }
+        criado_em: { type: string, format: date-time }
+
+    # ---------------------------------------------------------------- Eventos
+    EventoStatus:
+      type: string
+      enum: [rascunho, inscricoes_abertas, esgotado, encerrado, cancelado]
+    Evento:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nome: { type: string }
+        descricao: { type: [string, 'null'] }
+        inicio_em: { type: string, format: date-time }
+        fim_em: { type: string, format: date-time }
+        local_nome: { type: [string, 'null'] }
+        local_endereco: { type: [string, 'null'] }
+        imagem_url: { type: [string, 'null'], format: uri }
+        capacidade: { type: [integer, 'null'], description: Nulo = sem limite }
+        vagas_restantes: { type: [integer, 'null'] }
+        total_inscritos: { type: integer }
+        status: { $ref: '#/components/schemas/EventoStatus' }
+        publico_no_site: { type: boolean }
+        exige_inscricao: { type: boolean }
+        minha_inscricao:
+          oneOf:
+            - $ref: '#/components/schemas/Inscricao'
+            - type: 'null'
+    EventoInput:
+      type: object
+      required: [nome, inicio_em, fim_em]
+      properties:
+        nome: { type: string }
+        descricao: { type: string }
+        inicio_em: { type: string, format: date-time }
+        fim_em: { type: string, format: date-time }
+        local_nome: { type: string }
+        local_endereco: { type: string }
+        imagem_arquivo_id: { type: string, format: uuid }
+        capacidade: { type: integer, minimum: 1 }
+        status: { $ref: '#/components/schemas/EventoStatus' }
+        publico_no_site: { type: boolean }
+        exige_inscricao: { type: boolean }
+        turma_id: { type: string, format: uuid }
+    Inscricao:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        evento_id: { type: string, format: uuid }
+        status: { type: string, enum: [confirmada, lista_espera, cancelada] }
+        posicao_lista_espera: { type: [integer, 'null'] }
+        inscrito_em: { type: string, format: date-time }
+    Participante:
+      type: object
+      properties:
+        membro_id: { type: string, format: uuid }
+        nome_completo: { type: string }
+        igreja: { type: string }
+        cpf_mascarado: { type: [string, 'null'] }
+        inscricao_status: { type: string, enum: [confirmada, lista_espera, cancelada] }
+        presente: { type: boolean }
+        checkin_em: { type: [string, 'null'], format: date-time }
+    Checkin:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        evento_id: { type: string, format: uuid }
+        membro:
+          type: object
+          properties:
+            id: { type: string, format: uuid }
+            nome_completo: { type: string }
+            igreja: { type: string }
+        metodo: { type: string, enum: [qr, manual] }
+        registrado_em: { type: string, format: date-time }
+
+    # ---------------------------------------------------------------- Galeria e documentos
+    Album:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        titulo: { type: string }
+        descricao: { type: [string, 'null'] }
+        evento_id: { type: [string, 'null'], format: uuid }
+        capa_url: { type: [string, 'null'], format: uri }
+        total_fotos: { type: integer }
+        visibilidade: { type: string, enum: [publico, membros] }
+        status: { type: string, enum: [rascunho, publicado, arquivado] }
+        criado_em: { type: string, format: date-time }
+    AlbumInput:
+      type: object
+      required: [titulo]
+      properties:
+        titulo: { type: string }
+        descricao: { type: string }
+        evento_id: { type: string, format: uuid }
+        visibilidade: { type: string, enum: [publico, membros], default: membros }
+        autorizacao_imagem_confirmada:
+          type: boolean
+          description: Obrigatória para álbum público (RN-GAL-02)
+    Foto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        url: { type: string, format: uri }
+        miniatura_url: { type: string, format: uri }
+        legenda: { type: [string, 'null'] }
+        largura: { type: integer }
+        altura: { type: integer }
+        ordem: { type: integer }
+    Documento:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        titulo: { type: string }
+        descricao: { type: [string, 'null'] }
+        categoria: { type: string, examples: [Regulamentos] }
+        versao: { type: integer }
+        tamanho_bytes: { type: integer }
+        publicado_em: { type: [string, 'null'], format: date-time }
+        perfis_permitidos:
+          type: array
+          description: Vazio = todos os autenticados
+          items: { $ref: '#/components/schemas/PerfilCodigo' }
+    DocumentoInput:
+      type: object
+      required: [titulo, categoria_id, arquivo_id]
+      properties:
+        titulo: { type: string }
+        descricao: { type: string }
+        categoria_id: { type: string, format: uuid }
+        arquivo_id: { type: string, format: uuid }
+        perfis_permitidos:
+          type: array
+          items: { $ref: '#/components/schemas/PerfilCodigo' }
+        publicar_agora: { type: boolean, default: true }
+    UploadUrl:
+      type: object
+      properties:
+        arquivo_id: { type: string, format: uuid }
+        url: { type: string, format: uri, description: URL pré-assinada para PUT }
+        headers:
+          type: object
+          additionalProperties: { type: string }
+        expira_em: { type: string, format: date-time }
+    Arquivo:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nome_original: { type: string }
+        mime: { type: string }
+        tamanho_bytes: { type: integer }
+
+    # ---------------------------------------------------------------- Notificações
+    Notificacao:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        tipo: { type: string, examples: [evento.cancelado] }
+        prioridade: { type: string, enum: [baixa, normal, alta] }
+        titulo: { type: string }
+        corpo: { type: string }
+        link:
+          type: string
+          description: Link profundo aberto pelo app e pelo portal
+          examples: ['tlc://eventos/0192a1b2']
+        origem:
+          type: object
+          properties:
+            tipo: { type: string }
+            id: { type: string, format: uuid }
+        lida_em: { type: [string, 'null'], format: date-time }
+        criada_em: { type: string, format: date-time }
+    NotificacaoInput:
+      type: object
+      required: [titulo, corpo, segmento]
+      properties:
+        titulo: { type: string }
+        corpo: { type: string }
+        prioridade: { type: string, enum: [baixa, normal, alta], default: normal }
+        link: { type: string }
+        enviar_em: { type: string, format: date-time }
+        segmento:
+          type: object
+          description: Por perfil, igreja, turma, evento (inscritos ou presentes) ou todos
+          properties:
+            todos: { type: boolean }
+            perfis:
+              type: array
+              items: { $ref: '#/components/schemas/PerfilCodigo' }
+            igreja_ids:
+              type: array
+              items: { type: string, format: uuid }
+            turma_ids:
+              type: array
+              items: { type: string, format: uuid }
+            evento_id: { type: string, format: uuid }
+            evento_situacao: { type: string, enum: [inscritos, presentes] }
+        confirmar_envio_em_massa:
+          type: boolean
+          description: Obrigatório quando o alcance passa de 50 pessoas
+    Dispositivo:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        plataforma: { type: string, enum: [android, ios, web] }
+        app_versao: { type: [string, 'null'] }
+        ativo: { type: boolean }
+    DispositivoInput:
+      type: object
+      required: [plataforma, push_token]
+      properties:
+        plataforma: { type: string, enum: [android, ios, web] }
+        push_token: { type: string }
+        app_versao: { type: string }
+    PreferenciaNotificacao:
+      type: object
+      required: [tipo]
+      properties:
+        tipo: { type: string, examples: [evento.lembrete] }
+        push: { type: boolean }
+        email: { type: boolean }
+        no_app: { type: boolean }
+
+    # ---------------------------------------------------------------- Dashboard, site, sistema
+    DashboardResumo:
+      type: object
+      properties:
+        total_membros: { type: integer }
+        membros_novos_no_mes: { type: integer }
+        eventos_cadastrados: { type: integer }
+        eventos_abertos: { type: integer }
+        usuarios_ativos_30d:
+          type: integer
+          description: Abriram o app ou o portal nos últimos 30 dias (RN-DASH-01)
+        pendencias:
+          type: object
+          properties:
+            aprovacoes_cadastro: { type: integer }
+            mensagens_contato: { type: integer }
+        ultimos_avisos:
+          type: array
+          items: { $ref: '#/components/schemas/Aviso' }
+        proximos_eventos:
+          type: array
+          items: { $ref: '#/components/schemas/Evento' }
+    PaginaSite:
+      type: object
+      properties:
+        slug: { type: string, examples: [quem-somos] }
+        titulo: { type: string }
+        conteudo: { type: string }
+        publicado: { type: boolean }
+        atualizado_em: { type: string, format: date-time }
+    ContatoInput:
+      type: object
+      required: [nome, email, assunto, mensagem, captcha_token]
+      properties:
+        nome: { type: string }
+        email: { type: string, format: email }
+        telefone: { $ref: '#/components/schemas/Telefone' }
+        assunto: { type: string }
+        mensagem: { type: string, maxLength: 2000 }
+        captcha_token: { type: string }
+    ContatoStatus:
+      type: string
+      enum: [nova, em_atendimento, respondida]
+    MensagemContato:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nome: { type: string }
+        email: { type: string, format: email }
+        telefone: { type: [string, 'null'] }
+        assunto: { type: string }
+        mensagem: { type: string }
+        status: { $ref: '#/components/schemas/ContatoStatus' }
+        criado_em: { type: string, format: date-time }
+    Auditoria:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        usuario_id: { type: [string, 'null'], format: uuid }
+        acao: { type: string, examples: [cpf.visualizar] }
+        entidade: { type: string, examples: [membro] }
+        entidade_id: { type: [string, 'null'], format: uuid }
+        antes: { type: [object, 'null'] }
+        depois: { type: [object, 'null'] }
+        ip: { type: [string, 'null'] }
+        criado_em: { type: string, format: date-time }

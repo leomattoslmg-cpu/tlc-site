@@ -1,32 +1,34 @@
-# TLC Ponta Porã - MS · Site público
+# TLC Ponta Porã - MS · Plataforma
 
-Site institucional em Next.js 14 (App Router), TypeScript e Tailwind. Páginas: Início, Quem Somos, História, Eventos, Galeria, Contato e Privacidade. O botão **Entrar** leva ao portal do membro.
+Monorepo da plataforma digital do TLC (Treinamento de Liderança Cristã): site público, portal do membro, painel administrativo, aplicativo e API. Um só banco e uma só API.
 
-O conteúdo dinâmico vem da API da plataforma (rotas `/public/*` do OpenAPI do projeto):
-
-| Página | Rota da API |
-|---|---|
-| Quem Somos, História | `GET /public/paginas/{slug}` (`quem-somos`, `historia`) |
-| Início, Eventos | `GET /public/eventos` |
-| Início, Galeria | `GET /public/albuns` |
-| Contato | `POST /public/contato` (202, com captcha) |
-
-Sem `NEXT_PUBLIC_API_URL`, ou se a API falhar, as páginas mostram um estado vazio amigável. Nenhum conteúdo é inventado.
-
-## Rodar
-```bash
-cp .env.example .env.local
-npm install
-npm run dev      # http://localhost:3000
-npm run typecheck && npm run lint && npm run build
+```
+apps/
+  api/    API NestJS (/v1) e migrações do banco   → Sprint 0: FUN-03 e FUN-04
+  web/    Next.js: site público (/) e, depois, portal e painel
+  mobile/ (futuro) Expo / React Native
+packages/ (futuro) contracts, ui, config
+docs/     especificação, OpenAPI, backlog (xlsx) e schema de referência
 ```
 
-## Pendências para publicar
-- Trocar o selo "TLC" do cabeçalho pelo logotipo (`public/logo.svg`), se houver.
-- Preencher e-mail e Instagram no `.env` (rodapé).
-- Conferir o texto da página Privacidade.
-- Definir o captcha (Cloudflare Turnstile) e a chave pública; a API valida o token.
-- As rotas `/public/*` ainda não existem na API (Sprint 5, "site e contato").
+Decisões do projeto, regras de negócio e permissões estão em `docs/01-especificacao-completa.md`; o contrato da API em `docs/03-openapi.yaml`; o backlog em `docs/04-backlog-mvp.xlsx`.
 
-## Design
-Paleta aprovada (azul-petróleo `#1F4E79`, dourado `#B8860B`, cores por categoria) em variáveis CSS (`src/app/globals.css`), com modo escuro. O dourado é só detalhe, nunca cor de texto sobre fundo branco (contraste insuficiente). Corpo de 16 px, alvos de toque de 48 px, fonte Nunito Sans.
+## Rodar localmente
+```bash
+docker compose up -d                       # PostgreSQL 16 e Redis
+npm install                                # na raiz: instala API e site
+export DATABASE_URL=postgres://tlc:tlc@localhost:5432/tlc
+npm run db:migrate && npm run db:verify    # cria as 35 tabelas e os dados iniciais
+npm run dev:api                            # http://localhost:3000/v1/health
+npm run dev:web                            # http://localhost:3001
+npm test                                   # testes da API
+```
+Cada app tem o seu `.env.example` (`apps/api`, `apps/web`) e o seu README com detalhes.
+
+## Regras de ouro
+- **Nunca edite uma migração já aplicada** (`apps/api/db/migrations`); crie a próxima.
+- A API confere a permissão `recurso:ação` em toda rota; esconder botões nas telas é só conforto.
+- CPF completo: só Super Administrador, Administrador e o próprio titular (os demais veem mascarado). Idade mínima de 13 anos; sem cadastro de responsável legal.
+
+## Estado (14/11/2026)
+Sprint 0: banco por migrações (FUN-03) e esqueleto da API (FUN-04) escritos; site público inicial pronto. Falta rodar `npm install` e o CI pela primeira vez (nada foi compilado ainda) e gerar o `package-lock.json`.
