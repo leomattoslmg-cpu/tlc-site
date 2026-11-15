@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { AlbumCard } from '@/components/album-card';
 import { EstadoVazio } from '@/components/estado-vazio';
 import { EventoCard } from '@/components/evento-card';
+import { Guadalupe } from '@/components/guadalupe';
 import { albunsPublicos, eventosPublicos } from '@/lib/api';
 import { SITE_LEMA } from '@/lib/site';
 
@@ -18,7 +19,8 @@ export default async function Home() {
   return (
     <>
       <section className="bg-primaria text-primaria-sobre">
-        <div className="container-tlc py-16 sm:py-24">
+        <div className="container-tlc flex flex-col items-center gap-10 py-16 sm:py-24 md:flex-row md:justify-between">
+          <div>
           <p className="text-base font-semibold uppercase tracking-wide opacity-90">{SITE_LEMA}</p>
           <h1 className="mt-3 max-w-2xl text-3xl text-primaria-sobre sm:text-5xl">Formando líderes para servir em Ponta Porã e região</h1>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -29,6 +31,8 @@ export default async function Home() {
               Ver próximos eventos
             </Link>
           </div>
+          </div>
+          <Guadalupe className="h-72 w-64 shrink-0 drop-shadow-lg md:h-80 md:w-72" />
         </div>
         <div className="h-1 bg-destaque" aria-hidden />
       </section>

@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
+import { Guadalupe } from './guadalupe';
 import { MENU, PORTAL_URL, SITE_NOME } from '@/lib/site';
 
 export function Header() {
@@ -7,10 +8,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-borda bg-fundo/95 backdrop-blur">
       <div className="container-tlc flex min-h-[64px] items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primaria">
-          {/* Troque pelo logotipo do TLC quando existir (public/logo.svg). */}
-          <span aria-hidden className="grid h-9 w-9 place-items-center rounded-full bg-primaria text-sm font-bold text-primaria-sobre">
-            TLC
-          </span>
+          <Guadalupe className="h-11 w-10 shrink-0" />
           <span className="hidden sm:inline">{SITE_NOME}</span>
         </Link>
 
