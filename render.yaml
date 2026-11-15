@@ -4,7 +4,7 @@ services:
     name: tlc-api
     runtime: docker
     plan: free
-    region: virginia        # a Render não tem região no Brasil; Virgínia (EUA) é a mais próxima
+    region: oregon          # a Render não tem região no Brasil; mantida Oregon (EUA) por escolha do TLC
     dockerfilePath: ./apps/api/Dockerfile
     dockerContext: .
     healthCheckPath: /v1/health
