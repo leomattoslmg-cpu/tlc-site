@@ -48,8 +48,8 @@ paths:
   /auth/login:
     post:
       tags: [Autenticação]
-      summary: Entra com e-mail ou CPF
-      description: O campo `identificador` aceita e-mail ou CPF (11 dígitos). Após 5 falhas a conta é bloqueada por 15 minutos.
+      summary: Entra com CPF e senha
+      description: Login somente por CPF (11 dígitos, com ou sem máscara). Não há login por e-mail. Após 5 falhas a conta é bloqueada por 15 minutos.
       operationId: login
       security: []
       requestBody:
@@ -127,9 +127,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [identificador]
+              required: [cpf]
               properties:
-                identificador: { type: string, description: E-mail ou CPF }
+                cpf: { type: string, description: CPF (11 dígitos); o link vai para o e-mail cadastrado }
       responses:
         '202': { description: Se a conta existir, o e-mail foi enviado }
         '429': { $ref: '#/components/responses/TooManyRequests' }
@@ -1825,11 +1825,11 @@ components:
     # ---------------------------------------------------------------- Autenticação e conta
     LoginRequest:
       type: object
-      required: [identificador, senha]
+      required: [cpf, senha]
       properties:
-        identificador:
+        cpf:
           type: string
-          description: E-mail ou CPF (somente dígitos)
+          description: CPF (somente dígitos ou com máscara)
           examples: ['12345678909']
         senha: { type: string, format: password }
         dispositivo:
@@ -1923,7 +1923,7 @@ components:
         foto_url: { type: [string, 'null'], format: uri }
         cpf_mascarado:
           type: [string, 'null']
-          description: Formato ***.456.789-**; nulo para menor sem CPF
+          description: Formato ***.456.789-**; nulo só em registro anonimizado
           examples: ['***.456.789-**']
         cpf:
           allOf:
@@ -1943,8 +1943,8 @@ components:
         criado_em: { type: string, format: date-time }
     MembroInput:
       type: object
-      required: [nome_completo, data_nascimento, igreja_id]
-      description: CPF obrigatório; menor de 18 anos pode ser cadastrado sem CPF próprio (RN-MEM-10). Telefone ou WhatsApp obrigatório (RN-MEM-01).
+      required: [nome_completo, cpf, data_nascimento, igreja_id]
+      description: CPF obrigatório para todos, inclusive menores a partir de 13 anos (RN-MEM-10). Telefone ou WhatsApp obrigatório (RN-MEM-01).
       properties:
         nome_completo: { type: string }
         cpf: { $ref: '#/components/schemas/Cpf' }

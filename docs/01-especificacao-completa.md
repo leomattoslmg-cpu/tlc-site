@@ -94,7 +94,7 @@ O banco é PostgreSQL com 35 tabelas em 9 domínios; todo conteúdo carrega `org
 
 | Tabela | Campos principais | Observações |
 | --- | --- | --- |
-| `membros` | id, organizacao\_id, usuario\_id (opcional, único), igreja\_id, nome\_completo, foto\_arquivo\_id, cpf\_cifrado (vazio só para menor sem CPF), cpf\_hash (único), data\_nascimento, telefone, whatsapp, email, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes, status (ativo/inativo/pendente), data\_ingresso | Membro sem login é permitido: a secretaria cadastra e libera o acesso depois |
+| `membros` | id, organizacao\_id, usuario\_id (opcional, único), igreja\_id, nome\_completo, foto\_arquivo\_id, cpf\_cifrado (obrigatório; vazio só em registro anonimizado), cpf\_hash (único), data\_nascimento, telefone, whatsapp, email, cep, logradouro, numero, complemento, bairro, cidade, uf, observacoes, status (ativo/inativo/pendente), data\_ingresso | Membro sem login é permitido: a secretaria cadastra e libera o acesso depois |
 | `membro_historico` | id, membro\_id, tipo (cadastro/mudanca\_igreja/turma/evento/perfil/status/observacao), descricao, referencia\_tipo, referencia\_id, criado\_por | Linha do tempo gerada automaticamente pelo sistema |
 | `turmas` | id, organizacao\_id, nome, ano, data\_inicio, data\_fim, status | Edição do treinamento (opcional no MVP) |
 | `membro_turmas` | membro\_id, turma\_id, papel (aluno/facilitador/coordenador), situacao (cursando/concluido/desistente) | Alimenta o histórico do membro |
@@ -198,7 +198,7 @@ São 9 telas do aplicativo e 6 do painel e do site, em baixa fidelidade: mostram
 
 ### Aplicativo mobile
 
-**Login:** um campo só para e-mail ou CPF, entrada por biometria e caminho claro para cadastro e recuperação de senha.
+**Login:** um campo só, para o CPF, entrada por biometria e caminho claro para cadastro e recuperação de senha.
 
 ```text
 ┌──────────────────────────────────────┐
@@ -208,7 +208,7 @@ São 9 telas do aplicativo e 6 do painel e do site, em baixa fidelidade: mostram
 │       TLC Ponta Porã - MS            │
 │   Treinamento de Liderança Cristã    │
 │                                      │
-│  E-mail ou CPF                       │
+│  CPF                                 │
 │  [_____________________________]     │
 │  Senha                               │
 │  [___________________________] o     │
@@ -584,7 +584,7 @@ Cada regra tem um código (RN-módulo-número) para ser citada em tarefas, teste
 
 | Código | Regra |
 | --- | --- |
-| RN-AUT-01 | O campo de login aceita e-mail ou CPF; 11 dígitos são tratados como CPF, o resto como e-mail. |
+| RN-AUT-01 | O login é feito somente com CPF (11 dígitos, com ou sem máscara) e senha; não há login por e-mail. O e-mail serve para recuperar a senha e receber avisos, por isso é obrigatório para quem terá acesso. Todo usuário está ligado a um membro com CPF, inclusive equipe e administradores. |
 | RN-AUT-02 | O CPF é validado pelos dígitos verificadores e é único por organização. |
 | RN-AUT-03 | Senha com no mínimo 8 caracteres, ao menos 1 letra e 1 número, fora de uma lista de senhas comuns. |
 | RN-AUT-04 | Após 5 tentativas falhas, a conta fica bloqueada por 15 minutos. A mensagem é sempre "Credenciais inválidas", sem dizer qual dado errou. |
@@ -598,7 +598,7 @@ Cada regra tem um código (RN-módulo-número) para ser citada em tarefas, teste
 
 | Código | Regra |
 | --- | --- |
-| RN-MEM-01 | Campos obrigatórios: nome completo, CPF, data de nascimento, telefone ou WhatsApp e igreja. E-mail é obrigatório só para quem terá login. Menor sem CPF próprio segue o RN-MEM-10. |
+| RN-MEM-01 | Campos obrigatórios: nome completo, CPF, data de nascimento, telefone ou WhatsApp e igreja. E-mail é obrigatório só para quem terá login. Todos, inclusive menores a partir de 13 anos, precisam de CPF (RN-MEM-10). |
 | RN-MEM-02 | CPF duplicado é bloqueado; quem tem permissão vê um atalho para o cadastro já existente. |
 | RN-MEM-03 | Foto em JPG, PNG ou WebP até 5 MB, recortada em formato quadrado. |
 | RN-MEM-04 | Membros são inativados, não apagados. A exclusão definitiva é só do Super Administrador, anonimiza os dados pessoais e fica na auditoria. |
@@ -607,7 +607,7 @@ Cada regra tem um código (RN-módulo-número) para ser citada em tarefas, teste
 | RN-MEM-07 | O membro edita sozinho telefone, WhatsApp, e-mail, endereço e foto. Nome e igreja mudam pela Secretaria e geram linha no histórico; o CPF só muda por Administrador ou Super Administrador. |
 | RN-MEM-08 | O cadastro registra o aceite do termo de privacidade (LGPD) com data e versão do texto. |
 | RN-MEM-09 | O TLC atende a partir de 13 anos: o cadastro é recusado se a data de nascimento indicar menos de 13 anos. Quem tem de 13 a 17 anos é cadastrado como qualquer outro membro, sem responsável legal; a idade, calculada pela data de nascimento, também serve para filtros e relatórios. |
-| RN-MEM-10 | Menor sem CPF próprio pode ser cadastrado sem ele e entra por e-mail; o CPF passa a ser exigido ao completar 18 anos. |
+| RN-MEM-10 | O CPF é obrigatório para todos os membros, a qualquer idade (a partir de 13 anos), porque o login é feito só por CPF. Substitui a regra anterior que permitia cadastrar menor sem CPF. Só registro anonimizado (LGPD) fica sem CPF. |
 | RN-MEM-11 | CPF completo só é visto por Super Administrador, Administrador e pelo próprio titular; os demais perfis veem o CPF mascarado (\*\*\*.456.789-\*\*). A regra vale na API, no painel, no app e nas exportações, e cada abertura do CPF completo de outra pessoa fica registrada na auditoria. |
 | RN-MEM-12 | A Secretaria digita o CPF ao cadastrar, mas depois só o vê mascarado; a busca por CPF funciona com o número inteiro, e a correção do CPF é feita por Administrador ou Super Administrador. |
 
@@ -761,8 +761,8 @@ O QR Code fica salvo no aparelho, então o check-in funciona mesmo sem internet 
 
 | Fluxo | Quem | Passos | Resultado |
 | --- | --- | --- | --- |
-| Login | Membro e equipe | 1. Digita e-mail ou CPF e senha. 2. A API valida e devolve o token. 3. O app guarda a sessão e oferece biometria. | Abre na última aba usada |
-| Recuperação de senha | Qualquer usuário | 1. Toca em Esqueci minha senha e informa e-mail ou CPF. 2. Recebe o link por e-mail (válido por 60 minutos). 3. Define a nova senha. | Sessões antigas encerradas; login com a nova senha |
+| Login | Membro e equipe | 1. Digita o CPF e a senha. 2. A API valida e devolve o token. 3. O app guarda a sessão e oferece biometria. | Abre na última aba usada |
+| Recuperação de senha | Qualquer usuário | 1. Toca em Esqueci minha senha e informa o CPF. 2. Recebe o link no e-mail cadastrado (válido por 60 minutos); a resposta é a mesma exista ou não a conta. 3. Define a nova senha. | Sessões antigas encerradas; login com a nova senha |
 | Publicar aviso | Coordenador ou Secretaria | 1. Novo aviso no painel ou no app. 2. Preenche título, categoria e conteúdo; escolhe imagem, agendação e push. 3. Vê a prévia e publica. | Aviso no mural; push enviado se marcado |
 | Comentar e reagir | Membro | 1. Abre o aviso. 2. Toca numa reação ou escreve o comentário. | Autor do aviso recebe uma notificação agrupada |
 | Criar evento | Coordenador ou Secretaria | 1. Novo evento. 2. Informa nome, data, local, imagem, capacidade e se é público. 3. Salva como rascunho ou abre as inscrições. | Evento no app; no site se for público |
@@ -781,7 +781,7 @@ O plano entrega valor cedo: em cerca de 13 semanas a coordenação já usa mural
 
 | Módulo | Fase 1 · MVP | Fase 2 | Fase 3 | Fase 4 |
 | --- | --- | --- | --- | --- |
-| Autenticação e perfis | Login por e-mail ou CPF, recuperação de senha, 6 perfis, cadastro com aprovação | Biometria no app | Consulta de auditoria | Login social e SSO, se houver necessidade |
+| Autenticação e perfis | Login por CPF, recuperação de senha, 6 perfis, cadastro com aprovação | Biometria no app | Consulta de auditoria | Login social e SSO, se houver necessidade |
 | Membros | Cadastro, perfil, busca e filtros, igrejas | Histórico completo na linha do tempo | Turmas, exportação, importação de planilha | Anonimização em lote e pedidos do titular (LGPD) |
 | Mural | Avisos com 4 categorias, imagem e fixados | Comentários, reações e moderação | Agendamento, expiração e alcance (lidos) | Enquetes |
 | Eventos | Cadastro, inscrição, capacidade e status | Check-in por QR e manual, lista de espera, histórico | Relatório de presença em CSV e PDF | Certificado de participação, inscrição paga |
@@ -825,7 +825,7 @@ A recomendação é TypeScript de ponta a ponta, em um monólito modular: um só
 | ORM e migrações | Prisma ou Drizzle | Tipagem até o banco e migrações versionadas | TypeORM |
 | Cache e filas | Redis com BullMQ | Filas de notificação, e-mail e imagens; limite de requisições | pg-boss (fila no próprio PostgreSQL, uma peça a menos) |
 | Arquivos | Storage compatível com S3 (AWS S3 ou Cloudflare R2), CDN e a biblioteca sharp | Sem servidor de arquivos; miniaturas e WebP gerados no upload | Backblaze B2 |
-| Autenticação | JWT de acesso curto, refresh com rotação, senhas com argon2id | Atende login por e-mail ou CPF sem depender de terceiros | Keycloak ou Auth0, se surgir login único (SSO) |
+| Autenticação | JWT de acesso curto, refresh com rotação, senhas com argon2id | Atende login por CPF sem depender de terceiros | Keycloak ou Auth0, se surgir login único (SSO) |
 | Push | Firebase Cloud Messaging (Android direto, iOS via APNs) | Padrão de mercado e sem custo no volume esperado | Expo Push Service |
 | E-mail | Amazon SES ou Resend | Boa entrega e custo baixo | SendGrid |
 | WhatsApp (fase futura) | WhatsApp Business Platform, por provedor oficial | Convites e lembretes; cobrado por conversa | Link `wa.me` manual |
@@ -880,7 +880,7 @@ A API é única para site, portal, painel e app: JSON sobre HTTPS, versionada em
 
 | Método | Rota | Descrição | Permissão |
 | --- | --- | --- | --- |
-| POST | `/auth/login` | Entra com `identificador` (e-mail ou CPF) e `senha` | Público |
+| POST | `/auth/login` | Entra com `cpf` e `senha` | Público |
 | POST | `/auth/refresh` | Troca o refresh token por um novo par | Sessão |
 | POST | `/auth/logout` | Revoga a sessão atual | Autenticado |
 | POST | `/auth/cadastro` | Cria usuário `pendente` | Público |
@@ -979,7 +979,7 @@ Login com CPF (o mesmo campo aceita e-mail):
 
 ```json
 POST /v1/auth/login
-{ "identificador": "12345678909", "senha": "********", "dispositivo": { "plataforma": "android", "app_versao": "1.0.0" } }
+{ "cpf": "12345678909", "senha": "********", "dispositivo": { "plataforma": "android", "app_versao": "1.0.0" } }
 
 200 OK
 { "access_token": "eyJ...", "refresh_token": "rt_...", "expira_em": 900,
@@ -1113,7 +1113,7 @@ As cores abaixo são uma proposta inicial e devem ser trocadas pelas do logotipo
 
 - **Navegação:** barra inferior com 5 itens, sempre visível, e o sino de notificações no topo da tela Início.
 - **Toque:** alvos de pelo menos 48 px e ações principais ao alcance do polegar.
-- **Login:** um campo único "E-mail ou CPF" com máscara que se adapta ao que a pessoa digita, "mostrar senha" e entrada por biometria depois do primeiro acesso.
+- **Login:** um campo único "CPF" com máscara 000.000.000-00, "mostrar senha" e entrada por biometria depois do primeiro acesso.
 - **QR Code do evento:** abre em um toque a partir do cartão do evento, aumenta o brilho da tela e funciona sem internet.
 - **Velocidade:** esqueletos de carregamento no lugar de ícones girando, cache local do mural, puxar para atualizar.
 - **Notificações:** ao tocar, abre direto o aviso, o evento ou o documento (link profundo), nunca só a tela inicial.

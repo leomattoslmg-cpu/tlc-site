@@ -21,7 +21,7 @@ Este pacote reúne tudo o que foi feito até 14/11/2026, para continuar o projet
 
 Plataforma digital do **TLC Ponta Porã - MS** (Treinamento de Liderança Cristã) com quatro partes: site público, portal do membro, painel administrativo e aplicativo mobile (Android e iOS). Um só banco de dados e uma só API.
 
-Módulos: autenticação (login por e-mail ou CPF, recuperação de senha), membros, mural de avisos, eventos, galeria, documentos, notificações, dashboard e site institucional.
+Módulos: autenticação (login somente por CPF, recuperação de senha), membros, mural de avisos, eventos, galeria, documentos, notificações, dashboard e site institucional.
 
 Perfis: Super Administrador, Administrador, Coordenador, Secretaria, Membro, Visitante.
 
@@ -31,7 +31,7 @@ Perfis: Super Administrador, Administrador, Coordenador, Secretaria, Membro, Vis
 - O TLC aceita **menores de 18 anos** e trabalha com pessoas de **13 anos para cima**. Menor de 13 não pode ser cadastrado.
 - **Não se cadastra responsável legal.**
 - O **CPF completo** só pode ser visto por **Super Administrador, Administrador e pelo próprio titular**. Os demais perfis veem o CPF mascarado (`***.456.789-**`). A Secretaria digita o CPF no cadastro, mas depois o vê só mascarado; correção de CPF é feita por Administrador. Cada abertura do CPF de outra pessoa fica na auditoria.
-- Menor de 18 anos sem CPF próprio pode ser cadastrado sem CPF; o CPF passa a ser obrigatório aos 18.
+- **O login é feito somente por CPF** (decisão de 15/11/2026). Por isso o CPF é obrigatório para todos, inclusive menores a partir de 13 anos; isso substitui a regra antiga que permitia menor sem CPF (migração `0002_cpf_obrigatorio.sql`). O e-mail fica só para recuperar a senha.
 
 ## Arquitetura em uma frase
 
