@@ -19,17 +19,17 @@ export default async function Home() {
 
   return (
     <>
-      <section className="overflow-hidden bg-primaria text-primaria-sobre">
+      <section className="overflow-hidden bg-faixa text-white">
         <div className="container-tlc flex flex-col items-center gap-10 py-16 sm:py-24 md:flex-row md:justify-between">
           <div>
           <p className="text-base font-semibold uppercase tracking-wide opacity-90">{SITE_LEMA}</p>
-          <h1 className="mt-3 max-w-2xl text-3xl text-primaria-sobre sm:text-5xl">Formando líderes para servir.</h1>
-          <p className="mt-4 text-xl font-semibold text-primaria-sobre sm:text-2xl">Medo de nada, só amor!</p>
+          <h1 className="mt-3 max-w-2xl text-3xl text-white sm:text-5xl">Formando líderes para servir.</h1>
+          <p className="mt-4 text-xl font-semibold text-white sm:text-2xl">Medo de nada, só amor!</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/quem-somos" className="btn bg-fundo text-primaria hover:bg-superficie">
+            <Link href="/quem-somos" className="btn bg-white text-faixa hover:bg-white/90">
               Conheça o TLC
             </Link>
-            <Link href="/eventos" className="btn border border-primaria-sobre/60 text-primaria-sobre hover:bg-primaria-sobre/10">
+            <Link href="/eventos" className="btn border border-white/60 text-white hover:bg-white/10">
               Ver próximos eventos
             </Link>
           </div>

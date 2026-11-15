@@ -2,10 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Paleta aprovada (especificação, seção 14). Valores em "R G B" para aceitar opacidade. */
+/* Paleta (especificação, seção 14), com o azul trocado por azul escuro a pedido do TLC. Valores em "R G B". */
 :root {
-  --primaria: 31 78 121;        /* azul-petróleo #1F4E79 */
-  --primaria-forte: 23 61 96;
+  --primaria: 18 53 91;         /* azul escuro #12355B */
+  --primaria-forte: 11 37 66;   /* #0B2542 */
+  --faixa: 18 53 91;            /* fundo da faixa de destaque (igual nos dois modos) */
   --sobre-primaria: 255 255 255;
   --destaque: 184 134 11;       /* dourado #B8860B: só detalhes; não use como cor de texto sobre branco */
   --fundo: 255 255 255;
@@ -23,6 +24,7 @@
   :root {
     --primaria: 120 170 214;
     --primaria-forte: 150 190 226;
+    --faixa: 14 42 74;
     --sobre-primaria: 16 24 32;
     --destaque: 212 160 36;
     --fundo: 16 24 32;

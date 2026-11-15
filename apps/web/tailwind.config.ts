@@ -9,6 +9,7 @@ const config: Config = {
     extend: {
       colors: {
         primaria: { DEFAULT: token('primaria'), forte: token('primaria-forte'), sobre: token('sobre-primaria') },
+        faixa: token('faixa'),
         destaque: token('destaque'),
         fundo: token('fundo'),
         superficie: token('superficie'),
