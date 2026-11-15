@@ -4,19 +4,15 @@ import { PaginaTexto } from '@/components/pagina-texto';
 export const metadata: Metadata = { title: 'História do TLC' };
 export const revalidate = 300;
 
-// Texto padrão (usado enquanto o painel não tiver uma versão própria). Fatos conferidos no site oficial do TLC e na Wikipédia.
+// Texto fornecido pelo TLC Ponta Porã. Aparece enquanto o painel não tiver uma versão própria da página.
 const HISTORIA = [
-  'O TLC, Treinamento de Liderança Cristã, nasceu em 1967, em Campinas (SP), criado pelo padre jesuíta Haroldo Rahm (Harold Joseph Rahm). Nascido no Texas (EUA), ele chegou ao Brasil em 1964.',
-  'Junto com um grupo de leigos, jovens e adultos, o padre Haroldo criou um retiro cristão para formar líderes capazes de fazer a diferença na Igreja e na sociedade. A proposta reuniu a espiritualidade dos Exercícios Espirituais de Santo Inácio de Loyola, a experiência de movimentos como a Legião de Maria e a Ação Católica, e os documentos do Concílio Vaticano II.',
-  'O movimento se espalhou por todo o Brasil e chegou à Itália e à Argentina. Em 2017, o TLC celebrou o Jubileu de 50 anos. O seu lema é “Sempre Mais Alto”.',
-  'Em Ponta Porã - MS, seguimos essa missão: formar líderes para servir. Medo de nada, só amor!',
-];
-
-const FONTES = [
-  { rotulo: 'TLC Nacional: nosso fundador', href: 'https://tlc.org.br/nosso-fundador/' },
-  { rotulo: 'Wikipédia: Treinamento de Liderança Cristã', href: 'https://pt.wikipedia.org/wiki/Treinamento_de_Lideran%C3%A7a_Crist%C3%A3' },
+  'O Treinamento de Liderança Cristã (TLC) é um movimento da Igreja Católica fundado em 1967 pelo Padre Haroldo Rahm, em Campinas (SP). Inspirado nos valores cristãos e nos ensinamentos do Concílio Vaticano II, o movimento nasceu com a missão de formar jovens líderes comprometidos com a fé, a comunidade e o serviço ao próximo.',
+  'Ao longo das décadas, o TLC expandiu-se para diversas dioceses do Brasil e também para outros países, tornando-se uma importante escola de formação humana, espiritual e comunitária para milhares de jovens.',
+  'Em Ponta Porã, o TLC tornou-se uma referência na evangelização da juventude, promovendo encontros, retiros e atividades que fortalecem a amizade, a fé e o protagonismo cristão. Em 2017, o movimento comemorou seus 50 anos de existência, celebrando uma trajetória marcada pela transformação de vidas e pelo compromisso com os valores do Evangelho.',
+  'Hoje, o TLC de Ponta Porã continua sua missão de acolher, formar e enviar jovens para serem testemunhas de Cristo em suas famílias, comunidades e na sociedade.',
+  'Medo de nada, só amor.',
 ];
 
 export default function Historia() {
-  return <PaginaTexto slug="historia" titulo="História do TLC" padrao={HISTORIA} fontes={FONTES} />;
+  return <PaginaTexto slug="historia" titulo="História do TLC" padrao={HISTORIA} />;
 }
