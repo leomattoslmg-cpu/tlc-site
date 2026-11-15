@@ -3,6 +3,7 @@ import { AlbumCard } from '@/components/album-card';
 import { EstadoVazio } from '@/components/estado-vazio';
 import { EventoCard } from '@/components/evento-card';
 import { Guadalupe } from '@/components/guadalupe';
+import { LuzDourada } from '@/components/luz-dourada';
 import { albunsPublicos, eventosPublicos } from '@/lib/api';
 import { SITE_LEMA } from '@/lib/site';
 
@@ -18,7 +19,7 @@ export default async function Home() {
 
   return (
     <>
-      <section className="bg-primaria text-primaria-sobre">
+      <section className="overflow-hidden bg-primaria text-primaria-sobre">
         <div className="container-tlc flex flex-col items-center gap-10 py-16 sm:py-24 md:flex-row md:justify-between">
           <div>
           <p className="text-base font-semibold uppercase tracking-wide opacity-90">{SITE_LEMA}</p>
@@ -33,7 +34,10 @@ export default async function Home() {
             </Link>
           </div>
           </div>
-          <Guadalupe className="h-72 w-64 shrink-0 drop-shadow-lg md:h-80 md:w-72" />
+          <div className="relative grid shrink-0 place-items-center">
+            <LuzDourada />
+            <Guadalupe className="relative h-72 drop-shadow-lg md:h-80" />
+          </div>
         </div>
         <div className="h-1 bg-destaque" aria-hidden />
       </section>

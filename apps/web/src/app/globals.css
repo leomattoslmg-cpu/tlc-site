@@ -50,3 +50,37 @@ h1, h2, h3 { @apply font-semibold text-texto; }
   .cartao { @apply rounded-cartao border border-borda bg-fundo shadow-cartao; }
   .campo { @apply min-h-[48px] w-full rounded-cartao border border-borda bg-fundo px-3 text-base text-texto placeholder:text-texto-apoio; }
 }
+
+/* Luz dourada atrás da imagem de Guadalupe (página inicial) */
+.luz {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(36rem, 150vw);
+  height: min(36rem, 150vw);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.luz-brilho {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, rgba(255, 204, 64, 0.95) 0%, rgba(250, 184, 40, 0.8) 22%, rgba(235, 160, 30, 0.4) 40%, rgba(212, 160, 36, 0) 62%);
+}
+.luz-raios {
+  position: absolute;
+  inset: 0;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 200, 60, 0.85) 0deg 2.5deg, rgba(255, 200, 60, 0) 2.5deg 6deg, rgba(255, 200, 60, 0.5) 6deg 7.5deg, rgba(255, 200, 60, 0) 7.5deg 12deg);
+  -webkit-mask-image: radial-gradient(circle, #000 14%, transparent 64%);
+  mask-image: radial-gradient(circle, #000 14%, transparent 64%);
+  animation: girar-luz 240s linear infinite;
+}
+@keyframes girar-luz {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .luz-raios {
+    animation: none;
+  }
+}
