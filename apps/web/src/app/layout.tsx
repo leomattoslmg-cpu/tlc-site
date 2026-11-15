@@ -10,7 +10,7 @@ const fonte = Nunito_Sans({ subsets: ['latin'], variable: '--fonte', display: 's
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: { default: `${SITE_NOME} · ${SITE_LEMA}`, template: `%s · ${SITE_NOME}` },
-  description: 'Formando líderes para servir em Ponta Porã e região.',
+  description: 'Formando líderes para servir. Medo de nada, só amor! TLC Ponta Porã - MS.',
   openGraph: { siteName: SITE_NOME, locale: 'pt_BR', type: 'website' },
 };
 
