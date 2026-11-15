@@ -7,8 +7,8 @@ import { apiAutenticada, origemDoSite } from '@/lib/sessao';
 export const metadata: Metadata = { title: 'Membros e QR de cadastro', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
-interface Pendente { id: string; nome_completo: string; cpf_mascarado: string | null; email: string | null; telefone: string | null }
-interface Membro { id: string; nome_completo: string; cpf_mascarado: string | null; telefone: string | null; status: string }
+interface Pendente { id: string; nome_completo: string; cpf_mascarado: string | null; email: string | null; telefone: string | null; edicao_tlc: string | null }
+interface Membro { id: string; nome_completo: string; cpf_mascarado: string | null; telefone: string | null; edicao_tlc: string | null; status: string }
 interface Convite { id: string; token: string; expira_em: string; max_usos: number | null; usos: number; ativo: boolean }
 
 const dia = (iso: string) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Campo_Grande', dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso));
@@ -44,6 +44,7 @@ export default async function Membros({ searchParams }: { searchParams: { q?: st
                 <div>
                   <p className="font-semibold">{m.nome_completo}</p>
                   <p className="text-sm text-texto-apoio">CPF {m.cpf_mascarado} · {m.telefone} · {m.email}</p>
+                  <p className="text-sm font-semibold">Edição do TLC: {m.edicao_tlc || '—'}</p>
                 </div>
                 <div className="flex gap-2"><AprovarMembro id={m.id} /><RecusarMembro id={m.id} /></div>
               </li>
@@ -94,7 +95,7 @@ export default async function Membros({ searchParams }: { searchParams: { q?: st
               <li key={m.id} className="cartao flex flex-wrap items-center justify-between gap-3 p-4">
                 <div>
                   <p className="font-semibold">{m.nome_completo}</p>
-                  <p className="text-sm text-texto-apoio">CPF {m.cpf_mascarado} · {m.telefone} · {m.status}</p>
+                  <p className="text-sm text-texto-apoio">CPF {m.cpf_mascarado} · {m.telefone} · {m.edicao_tlc || 'edição não informada'} · {m.status}</p>
                 </div>
                 <RedefinirSenha id={m.id} nome={m.nome_completo} />
               </li>

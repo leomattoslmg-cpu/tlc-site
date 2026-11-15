@@ -23,7 +23,7 @@ function L({ id, t }: { id: string; t: string }) {
 }
 
 export function CadastroForm({ token }: { token: string }) {
-  const [v, setV] = useState({ nome: '', cpf: '', nascimento: '', telefone: '', email: '', senha: '' });
+  const [v, setV] = useState({ nome: '', telefone: '', cpf: '', email: '', edicao: '', nascimento: '', senha: '' });
   const [termo, setTermo] = useState(false);
   const [captcha, setCaptcha] = useState('');
   const [erro, setErro] = useState('');
@@ -43,11 +43,12 @@ export function CadastroForm({ token }: { token: string }) {
     ev.preventDefault();
     setErro('');
     if (v.nome.trim().length < 3) return setErro('Informe o nome completo.');
-    if (digitos(v.cpf).length !== 11) return setErro('O CPF tem 11 números.');
-    if (!v.nascimento) return setErro('Informe a data de nascimento.');
     const tel = digitos(v.telefone);
     if (tel.length < 10 || tel.length > 11) return setErro('Telefone com DDD, por exemplo (67) 99999-9999.');
+    if (digitos(v.cpf).length !== 11) return setErro('O CPF tem 11 números.');
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email.trim())) return setErro('Confira o e-mail.');
+    if (!v.edicao.trim()) return setErro('Informe em qual edição do TLC você fez o curso.');
+    if (!v.nascimento) return setErro('Informe a data de nascimento.');
     if (v.senha.length < 8 || !/\d/.test(v.senha) || !/[A-Za-zÀ-ÿ]/.test(v.senha)) return setErro('A senha precisa ter ao menos 8 caracteres, com letra e número.');
     if (!termo) return setErro('É preciso aceitar o uso dos dados para se cadastrar.');
     if (TURNSTILE_KEY && !captcha) return setErro('Confirme que você não é um robô.');
@@ -59,6 +60,7 @@ export function CadastroForm({ token }: { token: string }) {
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
           nome: v.nome.trim(),
+          edicao_tlc: v.edicao.trim(),
           cpf: v.cpf,
           nascimento: v.nascimento,
           telefone: `+55${tel}`,
@@ -92,10 +94,14 @@ export function CadastroForm({ token }: { token: string }) {
     <form onSubmit={aoEnviar} noValidate className="space-y-4">
       {TURNSTILE_KEY && <Script src="https://challenges.cloudflare.com/turnstile/v0/api.js" strategy="afterInteractive" async defer />}
       <div><L id="nome" t="Nome completo" /><input id="nome" autoComplete="name" className="campo" {...campo('nome')} /></div>
-      <div><L id="cpf" t="CPF" /><input id="cpf" inputMode="numeric" placeholder="000.000.000-00" className="campo" value={v.cpf} onChange={(e) => setV({ ...v, cpf: mascaraCpf(e.target.value) })} /></div>
-      <div><L id="nasc" t="Data de nascimento" /><input id="nasc" type="date" autoComplete="bday" className="campo" value={v.nascimento} onChange={(e) => setV({ ...v, nascimento: e.target.value })} /></div>
       <div><L id="tel" t="Telefone / WhatsApp" /><input id="tel" type="tel" inputMode="tel" autoComplete="tel" placeholder="(67) 99999-9999" className="campo" {...campo('telefone')} /></div>
+      <div><L id="cpf" t="CPF" /><input id="cpf" inputMode="numeric" placeholder="000.000.000-00" className="campo" value={v.cpf} onChange={(e) => setV({ ...v, cpf: mascaraCpf(e.target.value) })} /></div>
       <div><L id="email" t="E-mail" /><input id="email" type="email" inputMode="email" autoComplete="email" className="campo" {...campo('email')} /></div>
+      <div>
+        <L id="edicao" t="Qual edição do TLC que você fez?" />
+        <input id="edicao" className="campo" placeholder="Ex.: 87º TLC" {...campo('edicao')} />
+      </div>
+      <div><L id="nasc" t="Data de nascimento" /><input id="nasc" type="date" autoComplete="bday" className="campo" value={v.nascimento} onChange={(e) => setV({ ...v, nascimento: e.target.value })} /></div>
       <div>
         <L id="senha" t="Crie uma senha" />
         <input id="senha" type="password" autoComplete="new-password" className="campo" {...campo('senha')} />
