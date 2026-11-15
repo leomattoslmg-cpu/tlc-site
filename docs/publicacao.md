@@ -24,6 +24,7 @@ Valores e limites dos planos gratuitos mudam; confira nas páginas dos serviços
    - `API_PUBLIC_URL`: o endereço que a Render der ao serviço (ex.: `https://tlc-api.onrender.com`); pode editar depois do primeiro deploy.
    - `CORS_ORIGINS`: o endereço do site (ex.: `https://tlc-site.vercel.app`; vários, separados por vírgula).
    - `TURNSTILE_SECRET`: a chave secreta do passo 2.
+   A região é Virgínia (EUA), a mais próxima do Brasil; a Render não tem São Paulo. A região não pode ser trocada depois de criado o serviço: para mudar, é preciso criar outro.
 3. Aguarde o deploy e abra `https://SEU-ENDERECO/v1/health`: deve responder `{"status":"ok"}`. Em `/v1/health/ready` ele confere o banco.
 
 ## 4. Site (Vercel)
