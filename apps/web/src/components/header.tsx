@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { Guadalupe } from './guadalupe';
-import { MENU, PORTAL_URL, SITE_NOME } from '@/lib/site';
+import { BotaoPortal } from './botao-portal';
+import { MENU, SITE_NOME } from '@/lib/site';
 
 export function Header() {
   return (
@@ -21,9 +22,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <a href={PORTAL_URL} className="btn-primario min-h-[44px] px-4">
-            Entrar
-          </a>
+          <BotaoPortal />
           {/* Menu do celular sem JavaScript: <details> nativo */}
           <details className="relative lg:hidden">
             <summary
