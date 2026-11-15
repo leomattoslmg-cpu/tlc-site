@@ -1,0 +1,16 @@
+# Blueprint da Render: cria a API no plano gratuito. Os valores marcados "sync: false" são pedidos na tela.
+services:
+  - type: web
+    name: tlc-api
+    runtime: docker
+    plan: free
+    region: oregon          # a Render não tem região no Brasil; a mais próxima disponível pode variar
+    dockerfilePath: ./apps/api/Dockerfile
+    dockerContext: .
+    healthCheckPath: /v1/health
+    envVars:
+      - { key: NODE_ENV, value: production }
+      - { key: DATABASE_URL, sync: false }      # string de conexão do Neon (com ?sslmode=require)
+      - { key: API_PUBLIC_URL, sync: false }    # ex.: https://tlc-api.onrender.com
+      - { key: CORS_ORIGINS, sync: false }      # ex.: https://tlc-site.vercel.app
+      - { key: TURNSTILE_SECRET, sync: false }  # chave secreta do Cloudflare Turnstile
