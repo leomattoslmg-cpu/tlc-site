@@ -17,7 +17,7 @@ export async function POST(req: Request) {
     });
     const dados = await r.json().catch(() => ({}));
     if (!r.ok) {
-      const campo = Array.isArray(dados.errors) ? dados.errors[0]?.message : undefined;
+      const campo = Array.isArray(dados.errors) ? dados.errors[0]?.mensagem : undefined;
       const mensagem = r.status === 401 ? 'CPF ou senha incorretos.' : campo || dados.detail || dados.title || 'Não foi possível entrar.';
       const resp = NextResponse.json({ mensagem }, { status: r.status === 401 ? 401 : r.status });
       const espera = r.headers.get('retry-after');

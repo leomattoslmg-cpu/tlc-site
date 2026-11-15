@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Protege /portal/*. Se o token de acesso (15 min) expirou mas o de renovação (30 dias) existe, renova sozinho.
+ * Protege /portal/* e /presenca/*. Se o token de acesso (15 min) expirou mas o de renovação (30 dias) existe, renova sozinho.
  * Sem nenhum dos dois, manda para a tela de entrada.
  */
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? '';
@@ -33,9 +33,11 @@ export async function middleware(req: NextRequest) {
       /* cai na tela de entrada */
     }
   }
-  const resp = NextResponse.redirect(new URL('/portal/entrar', req.url));
+  const destino = new URL('/portal/entrar', req.url);
+  if (pathname.startsWith('/presenca/')) destino.searchParams.set('proximo', pathname);
+  const resp = NextResponse.redirect(destino);
   resp.cookies.delete('tlc_refresh');
   return resp;
 }
 
-export const config = { matcher: ['/portal/:path*'] };
+export const config = { matcher: ['/portal/:path*', '/presenca/:path*'] };

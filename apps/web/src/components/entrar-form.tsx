@@ -8,7 +8,12 @@ function mascara(v: string) {
   return d.replace(/^(\d{3})(\d)/, '$1.$2').replace(/^(\d{3})\.(\d{3})(\d)/, '$1.$2.$3').replace(/\.(\d{3})(\d)/, '.$1-$2');
 }
 
-export function EntrarForm() {
+/** Só aceita caminhos internos do próprio site (evita redirecionar para outro endereço). */
+function destinoSeguro(v?: string) {
+  return v && /^\/(?!\/)[A-Za-z0-9/_-]*$/.test(v) ? v : '/portal';
+}
+
+export function EntrarForm({ proximo }: { proximo?: string }) {
   const [cpf, setCpf] = useState('');
   const [senha, setSenha] = useState('');
   const [ver, setVer] = useState(false);
@@ -34,7 +39,7 @@ export function EntrarForm() {
         setEnviando(false);
         return;
       }
-      window.location.href = '/portal';
+      window.location.href = destinoSeguro(proximo);
     } catch {
       setErro('Sem conexão. Confira a internet e tente de novo.');
       setEnviando(false);

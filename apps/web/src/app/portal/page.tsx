@@ -1,11 +1,11 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Bell, CalendarDays, LogOut, UserRound } from 'lucide-react';
+import { Bell, CalendarDays, LogOut, QrCode, UserRound } from 'lucide-react';
 import Link from 'next/link';
 import { eventosPublicos } from '@/lib/api';
 import { dataHoraLonga } from '@/lib/format';
-import { chamarApi, COOKIE_ACESSO } from '@/lib/sessao';
+import { apiAutenticada, chamarApi, COOKIE_ACESSO } from '@/lib/sessao';
 
 export const metadata: Metadata = { title: 'Meu portal', robots: { index: false } };
 export const dynamic = 'force-dynamic';
@@ -39,6 +39,8 @@ export default async function Portal() {
   const me = await carregarMe();
   if (!me) redirect('/portal/entrar');
   const agora = Date.now();
+  const perms = (await apiAutenticada<{ data: string[] }>('/me/permissoes'))?.data ?? [];
+  const admin = perms.some((p) => ['eventos:participantes', 'eventos:exportar', 'usuarios:aprovar'].includes(p));
   const eventos = (await eventosPublicos()).filter((e) => new Date(e.fim_em).getTime() >= agora && e.status !== 'cancelado').slice(0, 3);
   const primeiro = me.membro?.nome_completo.split(' ')[0] ?? '';
   const perfis = me.usuario.perfis.map((p) => ROTULO_PERFIL[p] ?? p);
@@ -56,6 +58,12 @@ export default async function Portal() {
           </button>
         </form>
       </div>
+
+      {admin && (
+        <Link href="/portal/admin/eventos" className="cartao mt-6 flex items-center gap-3 p-4 font-semibold text-primaria hover:bg-superficie">
+          <QrCode size={22} aria-hidden /> Administração: eventos, QR Codes, cadastros e planilhas
+        </Link>
+      )}
 
       <div className="mt-8 grid gap-6 md:grid-cols-2">
         <section className="cartao p-5" aria-labelledby="dados">

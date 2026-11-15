@@ -86,3 +86,9 @@ h1, h2, h3 { @apply font-semibold text-texto; }
     animation: none;
   }
 }
+
+/* Impressão do cartaz com o QR Code: some o menu, o rodapé e os botões. */
+@media print {
+  header, footer, .nao-imprimir { display: none !important; }
+  body { background: #fff; }
+}

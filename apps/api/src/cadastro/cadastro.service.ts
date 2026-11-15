@@ -1,0 +1,151 @@
+import { Injectable } from '@nestjs/common';
+import { randomBytes } from 'node:crypto';
+import { AppError, Erros } from '../common/errors';
+import { AuditoriaService } from '../database/auditoria.service';
+import { DatabaseService } from '../database/database.service';
+import { OrganizacaoService } from '../database/organizacao.service';
+import { CryptoService } from '../auth/crypto.service';
+import { mascararCpf } from '../auth/cpf';
+import { hashSenha } from '../auth/senha';
+import type { UsuarioAutenticado } from '../auth/auth.types';
+import type { CadastroInput, CriarConviteInput } from './cadastro.schemas';
+
+type Conv = { id: string; expira_em: Date; max_usos: number | null; usos: number; revogado_em: Date | null };
+
+const conviteInvalido = () => new AppError(410, 'INVITE_INVALID', 'Convite inválido ou vencido', 'Peça um QR Code novo à coordenação.');
+
+@Injectable()
+export class CadastroService {
+  constructor(
+    private readonly db: DatabaseService,
+    private readonly organizacao: OrganizacaoService,
+    private readonly auditoria: AuditoriaService,
+    private readonly crypto: CryptoService,
+  ) {}
+
+  // ---------- convites (quem gera o QR de cadastro) ----------
+
+  async criarConvite(user: UsuarioAutenticado, i: CriarConviteInput, ip?: string) {
+    const org = await this.organizacao.id();
+    const token = randomBytes(24).toString('base64url');
+    const r = await this.db.query<{ id: string; expira_em: Date }>(
+      `INSERT INTO convites_cadastro (organizacao_id, token, criado_por, expira_em, max_usos)
+       VALUES ($1, $2, $3, now() + ($4 || ' hours')::interval, $5) RETURNING id, expira_em`,
+      [org, token, user.id, String(i.validade_horas), i.max_usos],
+    );
+    await this.auditoria.registrar('convite.criar', 'convites_cadastro', r.rows[0].id, user.id, { validade_horas: i.validade_horas, max_usos: i.max_usos }, ip);
+    return { id: r.rows[0].id, token, expira_em: r.rows[0].expira_em };
+  }
+
+  async listarConvites() {
+    const org = await this.organizacao.id();
+    const r = await this.db.query(
+      `SELECT id, token, expira_em, max_usos, usos, revogado_em, criado_em,
+              (revogado_em IS NULL AND expira_em > now() AND (max_usos IS NULL OR usos < max_usos)) AS ativo
+         FROM convites_cadastro WHERE organizacao_id = $1 ORDER BY criado_em DESC LIMIT 30`,
+      [org],
+    );
+    return r.rows;
+  }
+
+  async revogarConvite(user: UsuarioAutenticado, id: string, ip?: string) {
+    const r = await this.db.query('UPDATE convites_cadastro SET revogado_em = now() WHERE id = $1 AND revogado_em IS NULL', [id]);
+    if (!r.rowCount) throw Erros.naoEncontrado('Convite não encontrado');
+    await this.auditoria.registrar('convite.revogar', 'convites_cadastro', id, user.id, null, ip);
+  }
+
+  // ---------- página pública de cadastro ----------
+
+  async conviteValido(token: string): Promise<boolean> {
+    const r = await this.db.query<Conv>(
+      'SELECT id, expira_em, max_usos, usos, revogado_em FROM convites_cadastro WHERE token = $1',
+      [token],
+    );
+    const c = r.rows[0];
+    return !!c && !c.revogado_em && c.expira_em.getTime() > Date.now() && (c.max_usos === null || c.usos < c.max_usos);
+  }
+
+  /** O próprio membro se cadastra. Fica "pendente" até a Secretaria aprovar. */
+  async cadastrar(token: string, d: CadastroInput, ip?: string): Promise<void> {
+    const org = await this.organizacao.id();
+    const senhaHash = await hashSenha(d.senha);
+    try {
+      await this.db.transaction(async (c) => {
+        const conv = await c.query<Conv>(
+          'SELECT id, expira_em, max_usos, usos, revogado_em FROM convites_cadastro WHERE token = $1 AND organizacao_id = $2 FOR UPDATE',
+          [token, org],
+        );
+        const cv = conv.rows[0];
+        if (!cv || cv.revogado_em || cv.expira_em.getTime() <= Date.now() || (cv.max_usos !== null && cv.usos >= cv.max_usos)) throw conviteInvalido();
+
+        const hashCpf = this.crypto.hashCpf(d.cpf);
+        const dup = await c.query('SELECT 1 FROM membros WHERE organizacao_id = $1 AND cpf_hash = $2', [org, hashCpf]);
+        if (dup.rows.length) {
+          throw new AppError(409, 'CPF_EXISTS', 'Já existe um cadastro com este CPF', 'Se for o seu, entre com o CPF e a senha. Se esqueceu a senha, fale com a Secretaria.');
+        }
+        const ig = await c.query<{ id: string }>('SELECT id FROM igrejas WHERE organizacao_id = $1 ORDER BY criado_em LIMIT 1', [org]);
+        if (!ig.rows[0]) throw new AppError(503, 'NO_CHURCH', 'Cadastro indisponível', 'A coordenação ainda não configurou a igreja.');
+
+        const u = await c.query<{ id: string }>(
+          "INSERT INTO usuarios (organizacao_id, email, senha_hash, status) VALUES ($1, $2, $3, 'pendente') RETURNING id",
+          [org, d.email, senhaHash],
+        );
+        const m = await c.query<{ id: string }>(
+          `INSERT INTO membros (organizacao_id, usuario_id, igreja_id, nome_completo, cpf_cifrado, cpf_hash, data_nascimento,
+                                telefone, whatsapp, email, status, termo_aceito_em, termo_versao, convite_id)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9, 'pendente', now(), '1', $10) RETURNING id`,
+          [org, u.rows[0].id, ig.rows[0].id, d.nome, this.crypto.cifrarCpf(d.cpf), hashCpf, d.nascimento, d.telefone, d.email, cv.id],
+        );
+        await c.query("INSERT INTO usuario_perfis (usuario_id, perfil_id) SELECT $1, id FROM perfis WHERE codigo = 'membro'", [u.rows[0].id]);
+        await c.query('UPDATE convites_cadastro SET usos = usos + 1 WHERE id = $1', [cv.id]);
+        await this.auditoria.registrar('membro.autocadastro', 'membros', m.rows[0].id, u.rows[0].id, { convite_id: cv.id }, ip, c);
+      });
+    } catch (e) {
+      if (e instanceof AppError) throw e;
+      const cod = (e as { code?: string }).code;
+      const msg = (e as { message?: string }).message ?? '';
+      if (cod === '23505') {
+        throw new AppError(409, 'ALREADY_EXISTS', 'Já existe um cadastro com estes dados', 'Confira o CPF e o e-mail. Se for você, entre com o CPF e a senha.');
+      }
+      if (cod === '23514' && msg.includes('13 anos')) {
+        throw new AppError(422, 'AGE_MIN', 'Idade mínima não atendida', 'O cadastro é permitido a partir de 13 anos.');
+      }
+      throw e;
+    }
+  }
+
+  // ---------- aprovação (Secretaria / Administração) ----------
+
+  async pendentes() {
+    const org = await this.organizacao.id();
+    const r = await this.db.query<{ id: string; nome_completo: string; cpf_cifrado: Buffer | null; email: string | null; telefone: string | null; data_nascimento: string; criado_em: Date }>(
+      `SELECT id, nome_completo, cpf_cifrado, email, telefone, data_nascimento::text, criado_em
+         FROM membros WHERE organizacao_id = $1 AND status = 'pendente' AND usuario_id IS NOT NULL AND excluido_em IS NULL
+        ORDER BY criado_em`,
+      [org],
+    );
+    return r.rows.map(({ cpf_cifrado, ...m }) => ({ ...m, cpf_mascarado: cpf_cifrado ? mascararCpf(this.crypto.decifrarCpf(cpf_cifrado)) : null }));
+  }
+
+  private async decidir(user: UsuarioAutenticado, membroId: string, aprovar: boolean, ip?: string) {
+    const org = await this.organizacao.id();
+    await this.db.transaction(async (c) => {
+      const m = await c.query<{ usuario_id: string }>(
+        "SELECT usuario_id FROM membros WHERE id = $1 AND organizacao_id = $2 AND status = 'pendente' AND usuario_id IS NOT NULL FOR UPDATE",
+        [membroId, org],
+      );
+      if (!m.rows[0]) throw Erros.naoEncontrado('Cadastro pendente não encontrado');
+      await c.query(aprovar ? "UPDATE membros SET status = 'ativo', data_ingresso = current_date WHERE id = $1" : "UPDATE membros SET status = 'inativo' WHERE id = $1", [membroId]);
+      await c.query('UPDATE usuarios SET status = $2 WHERE id = $1', [m.rows[0].usuario_id, aprovar ? 'ativo' : 'inativo']);
+      await this.auditoria.registrar(aprovar ? 'membro.aprovar' : 'membro.recusar', 'membros', membroId, user.id, null, ip, c);
+    });
+  }
+
+  aprovar(user: UsuarioAutenticado, membroId: string, ip?: string) {
+    return this.decidir(user, membroId, true, ip);
+  }
+
+  recusar(user: UsuarioAutenticado, membroId: string, ip?: string) {
+    return this.decidir(user, membroId, false, ip);
+  }
+}
