@@ -85,7 +85,12 @@ export function ContatoForm() {
       if (r.status === 422) {
         const corpo = (await r.json().catch(() => null)) as { errors?: { campo: string; mensagem: string }[] } | null;
         const porCampo: Erros = {};
-        for (const x of corpo?.errors ?? []) porCampo[x.campo as Campos] = x.mensagem;
+        const campos: string[] = ['nome', 'email', 'telefone', 'assunto', 'mensagem'];
+        for (const x of corpo?.errors ?? []) {
+          // Erros de campos que não têm caixa na tela (ex.: captcha) aparecem na mensagem geral.
+          if (campos.includes(x.campo)) porCampo[x.campo as Campos] = x.mensagem;
+          else porCampo.geral = x.mensagem;
+        }
         return setErros(Object.keys(porCampo).length ? porCampo : { geral: 'Confira os dados e tente de novo.' });
       }
       setErros({ geral: 'Não conseguimos enviar agora. Tente de novo em instantes.' });
