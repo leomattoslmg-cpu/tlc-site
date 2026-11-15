@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
-import type { PoolClient } from 'pg';
+import type { QueryResult, QueryResultRow } from 'pg';
 import { AppError, Erros } from '../common/errors';
 import { DatabaseService } from '../database/database.service';
 import { OrganizacaoService } from '../database/organizacao.service';
@@ -15,7 +15,10 @@ const REFRESH_DIAS = 30; // RN-AUT-07
 const MAX_FALHAS = 5; // RN-AUT-04
 const BLOQUEIO_MINUTOS = 15; // RN-AUT-04
 
-type Db = Pick<PoolClient, 'query'>;
+/** Qualquer coisa que execute SQL: o pool (DatabaseService) ou um cliente dentro de uma transação. */
+interface Db {
+  query<T extends QueryResultRow = QueryResultRow>(sql: string, params?: unknown[]): Promise<QueryResult<T>>;
+}
 
 @Injectable()
 export class AuthService {
