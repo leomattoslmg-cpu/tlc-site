@@ -31,4 +31,4 @@ Cada app tem o seu `.env.example` (`apps/api`, `apps/web`) e o seu README com de
 - CPF completo: só Super Administrador, Administrador e o próprio titular (os demais veem mascarado). Idade mínima de 13 anos; sem cadastro de responsável legal.
 
 ## Estado (14/11/2026)
-Sprint 0: banco por migrações (FUN-03) e esqueleto da API (FUN-04) escritos; site público inicial pronto. Falta rodar `npm install` e o CI pela primeira vez (nada foi compilado ainda) e gerar o `package-lock.json`.
+Sprint 0: banco por migrações (FUN-03) e esqueleto da API (FUN-04) escritos; site público pronto, com as rotas públicas da API (`/public/paginas`, `/eventos`, `/albuns`, `/contato`). Falta rodar `npm install` e o CI pela primeira vez (nada foi compilado ainda) e gerar o `package-lock.json`.

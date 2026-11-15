@@ -6,6 +6,12 @@ const schema = z.object({
   API_PUBLIC_URL: z.string().url().default('http://localhost:3000'),
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().optional(),
+  // Slug da organização atendida; sem ele, usa a primeira cadastrada (a plataforma atende um só TLC).
+  ORG_SLUG: z.string().optional(),
+  // Base pública do storage/CDN; as imagens ficam em {CDN_BASE_URL}/{chave_storage}.
+  CDN_BASE_URL: z.string().url().optional(),
+  // Chave secreta do Cloudflare Turnstile. Sem ela, o captcha só é dispensado fora de produção.
+  TURNSTILE_SECRET: z.string().optional(),
   CORS_ORIGINS: z
     .string()
     .default('')

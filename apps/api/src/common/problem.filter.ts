@@ -39,6 +39,7 @@ export class ProblemFilter implements ExceptionFilter {
     const p = this.mapear(exception);
     if (p.status >= 500) this.log.error(exception instanceof Error ? (exception.stack ?? exception.message) : String(exception));
     p.instance = req.path;
+    if (exception instanceof AppError && exception.headers) res.set(exception.headers);
     res.status(p.status).type('application/problem+json').send(p);
   }
 

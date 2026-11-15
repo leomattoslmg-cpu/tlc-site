@@ -26,7 +26,8 @@ npm run typecheck && npm run lint && npm run build
 - Preencher e-mail e Instagram no `.env` (rodapé).
 - Conferir o texto da página Privacidade.
 - Definir o captcha (Cloudflare Turnstile) e a chave pública; a API valida o token.
-- As rotas `/public/*` ainda não existem na API (Sprint 5, "site e contato").
+- Publicar a API (apps/api) e apontar `NEXT_PUBLIC_API_URL` para ela; as rotas `/public/*` já existem lá.
+- A API precisa de `TURNSTILE_SECRET` em produção, senão recusa as mensagens de contato.
 
 ## Design
 Paleta aprovada (azul-petróleo `#1F4E79`, dourado `#B8860B`, cores por categoria) em variáveis CSS (`src/app/globals.css`), com modo escuro. O dourado é só detalhe, nunca cor de texto sobre fundo branco (contraste insuficiente). Corpo de 16 px, alvos de toque de 48 px, fonte Nunito Sans.

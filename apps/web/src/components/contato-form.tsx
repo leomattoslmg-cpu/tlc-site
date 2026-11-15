@@ -74,7 +74,7 @@ export function ContatoForm() {
         body: JSON.stringify({
           nome: v.nome.trim(),
           email: v.email.trim(),
-          ...(v.telefone.replace(/\D/g, '') && { telefone: v.telefone.replace(/\D/g, '') }),
+          ...(v.telefone.replace(/\D/g, '') && { telefone: `+55${v.telefone.replace(/\D/g, '')}` }),
           assunto: v.assunto.trim(),
           mensagem: v.mensagem.trim(),
           captcha_token: TURNSTILE_KEY ? token : 'dev-sem-captcha',
