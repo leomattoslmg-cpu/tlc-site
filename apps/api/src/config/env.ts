@@ -12,6 +12,16 @@ const schema = z.object({
   CDN_BASE_URL: z.string().url().optional(),
   // Chave secreta do Cloudflare Turnstile. Sem ela, o captcha só é dispensado fora de produção.
   TURNSTILE_SECRET: z.string().optional(),
+  // Segredo mestre (mín. 32 caracteres) de onde saem as chaves do login (JWT) e do CPF (cifra e busca).
+  // ATENÇÃO: trocar este valor depois invalida as sessões e impede achar/ler os CPFs já gravados.
+  APP_SEGREDO: z.string().min(32, 'APP_SEGREDO precisa ter ao menos 32 caracteres').optional(),
+  // Primeiro administrador (criado uma vez, só se ainda não houver nenhum Super Administrador).
+  BOOTSTRAP_ADMIN_CPF: z.string().optional(),
+  BOOTSTRAP_ADMIN_NOME: z.string().optional(),
+  BOOTSTRAP_ADMIN_NASCIMENTO: z.string().optional(),
+  BOOTSTRAP_ADMIN_EMAIL: z.string().optional(),
+  BOOTSTRAP_ADMIN_TELEFONE: z.string().optional(),
+  BOOTSTRAP_ADMIN_SENHA: z.string().optional(),
   CORS_ORIGINS: z
     .string()
     .default('')
