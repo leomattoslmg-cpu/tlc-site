@@ -28,8 +28,9 @@ export function Guadalupe({ className = 'h-64 w-60' }: { className?: string }) {
   const oficial = imagemOficial();
   if (oficial) {
     return (
-      <div className={`relative ${className}`}>
-        <Image src={oficial} alt={NOME} fill sizes="(min-width: 640px) 240px, 160px" className="object-contain" />
+      {/* A imagem é mais estreita que o emblema: a largura segue a proporção (308 x 617) a partir da altura. */}
+      <div className={`relative ${className} !w-auto aspect-[308/617]`}>
+        <Image src={oficial} alt={NOME} fill sizes="(min-width: 768px) 180px, 150px" className="object-contain" />
       </div>
     );
   }

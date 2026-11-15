@@ -8,7 +8,7 @@ export function Header() {
     <header className="sticky top-0 z-40 border-b border-borda bg-fundo/95 backdrop-blur">
       <div className="container-tlc flex min-h-[64px] items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primaria">
-          <Guadalupe className="h-11 w-10 shrink-0" />
+          <Guadalupe className="h-12 w-10 shrink-0" />
           <span className="hidden sm:inline">{SITE_NOME}</span>
         </Link>
 
