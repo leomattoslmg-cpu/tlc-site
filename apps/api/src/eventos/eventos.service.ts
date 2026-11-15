@@ -80,6 +80,16 @@ export class EventosService {
     await this.auditoria.registrar('evento.cancelar', 'eventos', id, user.id, null, ip);
   }
 
+  /** Troca o código do QR. O cartaz antigo deixa de funcionar na hora. */
+  async novoQr(user: UsuarioAutenticado, id: string, ip?: string): Promise<{ checkin_token: string }> {
+    const org = await this.organizacao.id();
+    const token = randomBytes(24).toString('base64url');
+    const r = await this.db.query('UPDATE eventos SET checkin_token = $3 WHERE id = $1 AND organizacao_id = $2 AND excluido_em IS NULL', [id, org, token]);
+    if (!r.rowCount) throw Erros.naoEncontrado('Evento não encontrado');
+    await this.auditoria.registrar('evento.trocar_qr', 'eventos', id, user.id, null, ip);
+    return { checkin_token: token };
+  }
+
   private async eventoPorToken(token: string): Promise<EventoQr> {
     const org = await this.organizacao.id();
     const r = await this.db.query<EventoQr>(

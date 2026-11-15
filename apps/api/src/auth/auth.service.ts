@@ -6,7 +6,7 @@ import { DatabaseService } from '../database/database.service';
 import { OrganizacaoService } from '../database/organizacao.service';
 import { CryptoService, sha256 } from './crypto.service';
 import { mascararCpf } from './cpf';
-import { conferirSenha, hashSenha } from './senha';
+import { conferirSenha, erroDeSenha, hashSenha } from './senha';
 import type { TokenPair, UsuarioAutenticado } from './auth.types';
 import type { LoginInput } from './auth.schemas';
 
@@ -186,5 +186,21 @@ export class AuthService {
       [usuarioId],
     );
     return r.rows.map((x) => x.p);
+  }
+
+  /** O próprio usuário troca a senha. As outras sessões (outros aparelhos) são encerradas. */
+  async trocarSenha(user: UsuarioAutenticado, atual: string, nova: string): Promise<void> {
+    const r = await this.db.query<{ senha_hash: string | null }>('SELECT senha_hash FROM usuarios WHERE id = $1', [user.id]);
+    const guardada = r.rows[0]?.senha_hash;
+    if (!guardada || !(await conferirSenha(guardada, atual))) {
+      throw new AppError(422, 'WRONG_PASSWORD', 'Senha atual incorreta', undefined, [{ campo: 'senha_atual', mensagem: 'A senha atual não confere' }]);
+    }
+    const erro = erroDeSenha(nova);
+    if (erro) throw Erros.validacao([{ campo: 'senha_nova', mensagem: erro }]);
+    const novoHash = await hashSenha(nova);
+    await this.db.transaction(async (c) => {
+      await c.query('UPDATE usuarios SET senha_hash = $2 WHERE id = $1', [user.id, novoHash]);
+      await c.query('UPDATE sessoes SET revogado_em = now() WHERE usuario_id = $1 AND id <> $2 AND revogado_em IS NULL', [user.id, user.sid]);
+    });
   }
 }

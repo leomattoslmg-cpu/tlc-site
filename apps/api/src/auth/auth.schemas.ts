@@ -20,3 +20,9 @@ export const loginSchema = z.object({
 export type LoginInput = z.infer<typeof loginSchema>;
 
 export const refreshSchema = z.object({ refresh_token: z.string().min(20).max(200) });
+
+export const trocarSenhaSchema = z.object({
+  senha_atual: z.string().min(1, 'Informe a senha atual').max(200),
+  senha_nova: z.string().min(1, 'Informe a nova senha').max(200),
+});
+export type TrocarSenhaInput = z.infer<typeof trocarSenhaSchema>;

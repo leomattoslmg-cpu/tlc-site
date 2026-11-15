@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { AdminNav, SemAcesso } from '@/components/admin/admin-nav';
-import { AprovarMembro, NovoConvite, RecusarMembro, RevogarConvite } from '@/components/admin/acoes';
+import { AprovarMembro, NovoConvite, RecusarMembro, RedefinirSenha, RevogarConvite } from '@/components/admin/acoes';
 import { Qr } from '@/lib/qr';
 import { apiAutenticada, origemDoSite } from '@/lib/sessao';
 
@@ -8,12 +8,18 @@ export const metadata: Metadata = { title: 'Membros e QR de cadastro', robots: {
 export const dynamic = 'force-dynamic';
 
 interface Pendente { id: string; nome_completo: string; cpf_mascarado: string | null; email: string | null; telefone: string | null }
+interface Membro { id: string; nome_completo: string; cpf_mascarado: string | null; telefone: string | null; status: string }
 interface Convite { id: string; token: string; expira_em: string; max_usos: number | null; usos: number; ativo: boolean }
 
 const dia = (iso: string) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'America/Campo_Grande', dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso));
 
-export default async function Membros() {
-  const [pend, conv] = await Promise.all([apiAutenticada<{ data: Pendente[] }>('/membros-pendentes'), apiAutenticada<{ data: Convite[] }>('/convites')]);
+export default async function Membros({ searchParams }: { searchParams: { q?: string } }) {
+  const q = typeof searchParams.q === 'string' ? searchParams.q.slice(0, 80) : '';
+  const [pend, conv, lista] = await Promise.all([
+    apiAutenticada<{ data: Pendente[] }>('/membros-pendentes'),
+    apiAutenticada<{ data: Convite[] }>('/convites'),
+    apiAutenticada<{ data: Membro[] }>(`/membros?q=${encodeURIComponent(q)}`),
+  ]);
   if (!pend || !conv) {
     return (
       <div className="container-tlc py-8 sm:py-12">
@@ -68,6 +74,34 @@ export default async function Membros() {
           )}
         </section>
       </div>
+
+      <section aria-labelledby="todos" className="mt-12">
+        <h2 id="todos" className="mb-3 text-lg">Membros</h2>
+        <form method="get" className="mb-4 flex items-end gap-3">
+          <div className="flex-1">
+            <label htmlFor="busca" className="mb-1 block font-semibold">Buscar pelo nome</label>
+            <input id="busca" name="q" defaultValue={q} className="campo" />
+          </div>
+          <button type="submit" className="btn-secundario min-h-[48px] px-4">Buscar</button>
+        </form>
+        {!lista ? (
+          <p className="text-texto-apoio">Você não tem acesso à lista de membros.</p>
+        ) : lista.data.length === 0 ? (
+          <p className="text-texto-apoio">Nenhum membro encontrado.</p>
+        ) : (
+          <ul className="space-y-3">
+            {lista.data.map((m) => (
+              <li key={m.id} className="cartao flex flex-wrap items-center justify-between gap-3 p-4">
+                <div>
+                  <p className="font-semibold">{m.nome_completo}</p>
+                  <p className="text-sm text-texto-apoio">CPF {m.cpf_mascarado} · {m.telefone} · {m.status}</p>
+                </div>
+                <RedefinirSenha id={m.id} nome={m.nome_completo} />
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </div>
   );
 }

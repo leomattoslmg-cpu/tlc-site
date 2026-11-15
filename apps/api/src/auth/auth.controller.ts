@@ -4,7 +4,7 @@ import { Erros } from '../common/errors';
 import { RateLimiter } from '../common/rate-limit';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { AuthGuard, RequisicaoAutenticada } from './auth.guard';
-import { LoginInput, loginSchema, refreshSchema } from './auth.schemas';
+import { LoginInput, loginSchema, refreshSchema, TrocarSenhaInput, trocarSenhaSchema } from './auth.schemas';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -39,12 +39,23 @@ export class AuthController {
 @Controller('me')
 @UseGuards(AuthGuard)
 export class MeController {
+  // Quem acertar a senha atual por tentativa e erro é barrado: 5 tentativas a cada 15 minutos.
+  private readonly limiteSenha = new RateLimiter(5, 15 * 60 * 1000);
+
   constructor(private readonly auth: AuthService) {}
 
   @Get()
   me(@Req() req: RequisicaoAutenticada) {
     if (!req.user) throw Erros.naoAutenticado();
     return this.auth.me(req.user);
+  }
+
+  @Post('senha')
+  @HttpCode(204)
+  async trocarSenha(@Body(new ZodValidationPipe(trocarSenhaSchema)) corpo: TrocarSenhaInput, @Req() req: RequisicaoAutenticada): Promise<void> {
+    if (!req.user) throw Erros.naoAutenticado();
+    this.limiteSenha.consumir(req.user.id);
+    await this.auth.trocarSenha(req.user, corpo.senha_atual, corpo.senha_nova);
   }
 
   @Get('permissoes')

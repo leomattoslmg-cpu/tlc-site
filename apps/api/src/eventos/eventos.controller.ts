@@ -37,6 +37,13 @@ export class EventosController {
     return this.eventos.detalhe(id);
   }
 
+  @Post(':id/novo-qr')
+  @HttpCode(200)
+  @Permissao('eventos:editar')
+  novoQr(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Req() req: RequisicaoAutenticada) {
+    return this.eventos.novoQr(usuario(req), id, req.ip);
+  }
+
   @Post(':id/cancelar')
   @HttpCode(204)
   @Permissao('eventos:editar')

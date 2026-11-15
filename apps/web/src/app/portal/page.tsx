@@ -51,6 +51,7 @@ export default async function Portal() {
         <div>
           <h1 className="text-2xl sm:text-3xl">Paz e bem, {primeiro}!</h1>
           <p className="mt-1 text-texto-apoio">{perfis.join(' · ')}</p>
+          <Link href="/portal/senha" className="mt-2 inline-block font-semibold text-primaria underline">Trocar minha senha</Link>
         </div>
         <form action="/api/portal/sair" method="post">
           <button type="submit" className="btn-secundario min-h-[44px] gap-2 px-4">

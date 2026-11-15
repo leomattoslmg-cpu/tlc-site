@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { AuthGuard, RequisicaoAutenticada } from '../auth/auth.guard';
 import { Permissao, PermissaoGuard } from '../auth/permissao.guard';
@@ -71,6 +71,19 @@ export class CadastroAdminController {
   @Permissao('usuarios:aprovar')
   async revogar(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Req() req: RequisicaoAutenticada): Promise<void> {
     await this.cadastro.revogarConvite(usuario(req), id, req.ip);
+  }
+
+  @Get('membros')
+  @Permissao('usuarios:redefinir_senha')
+  async membros(@Query('q') q?: string) {
+    return { data: await this.cadastro.membros(typeof q === 'string' ? q.slice(0, 80) : undefined) };
+  }
+
+  @Post('membros/:id/redefinir-senha')
+  @HttpCode(200)
+  @Permissao('usuarios:redefinir_senha')
+  redefinirSenha(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Req() req: RequisicaoAutenticada) {
+    return this.cadastro.redefinirSenha(usuario(req), id, req.ip);
   }
 
   @Get('membros-pendentes')

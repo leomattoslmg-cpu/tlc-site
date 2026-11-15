@@ -37,6 +37,41 @@ export const RevogarConvite = ({ id }: { id: string }) => (
   <Acao rotulo="Desativar QR" ocupado="Desativando…" caminho={`convites/${id}`} metodo="DELETE" confirmar="Desativar este QR Code de cadastro? Quem ainda não se cadastrou não poderá mais usá-lo." />
 );
 
+export const TrocarQr = ({ id }: { id: string }) => (
+  <Acao rotulo="Trocar QR Code" ocupado="Trocando…" caminho={`eventos/${id}/novo-qr`} confirmar="Trocar o QR Code? O cartaz já impresso deixa de funcionar e precisa ser impresso de novo." />
+);
+
+/** Gera uma senha temporária para quem esqueceu a senha. Ela aparece uma única vez. */
+export function RedefinirSenha({ id, nome }: { id: string; nome: string }) {
+  const [enviando, setEnviando] = useState(false);
+  const [senha, setSenha] = useState('');
+  const [erro, setErro] = useState('');
+  async function gerar() {
+    if (!window.confirm(`Gerar uma senha temporária para ${nome}? A senha atual deixa de valer e a pessoa sai de todos os aparelhos.`)) return;
+    setEnviando(true);
+    setErro('');
+    const r = await chamarPortal(`membros/${id}/redefinir-senha`);
+    setEnviando(false);
+    if (!r.ok) return setErro(r.mensagem ?? 'Não foi possível gerar.');
+    setSenha(String(r.dados.senha_temporaria ?? ''));
+  }
+  if (senha) {
+    return (
+      <div role="status" className="rounded-cartao border border-cat-eventos p-3">
+        <p className="text-sm text-texto-apoio">Senha temporária (anote e passe à pessoa; não será mostrada de novo):</p>
+        <p className="select-all font-mono text-xl font-bold tracking-wider">{senha}</p>
+        <p className="text-sm text-texto-apoio">Peça para ela trocar em &ldquo;Trocar minha senha&rdquo; depois de entrar.</p>
+      </div>
+    );
+  }
+  return (
+    <span className="inline-flex flex-col">
+      <button type="button" onClick={gerar} disabled={enviando} className="btn-secundario min-h-[44px] px-4 disabled:opacity-60">{enviando ? 'Gerando…' : 'Redefinir senha'}</button>
+      {erro && <span role="alert" className="mt-1 text-sm font-semibold text-cat-importante">{erro}</span>}
+    </span>
+  );
+}
+
 export function Imprimir() {
   return (
     <button type="button" onClick={() => window.print()} className="btn-secundario nao-imprimir min-h-[44px] px-4">

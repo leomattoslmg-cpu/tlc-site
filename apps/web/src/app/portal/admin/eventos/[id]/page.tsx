@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { AdminNav, SemAcesso } from '@/components/admin/admin-nav';
-import { CancelarEvento, Imprimir } from '@/components/admin/acoes';
+import { CancelarEvento, Imprimir, TrocarQr } from '@/components/admin/acoes';
 import { dataHoraLonga } from '@/lib/format';
 import { Qr } from '@/lib/qr';
 import { apiAutenticada, origemDoSite } from '@/lib/sessao';
@@ -40,6 +40,7 @@ export default async function EventoAdmin({ params }: { params: { id: string } }
           <p className="mt-1 break-all text-sm text-texto-apoio">{url}</p>
           <div className="nao-imprimir mt-5 flex flex-wrap justify-center gap-3">
             <Imprimir />
+            {e.status !== 'cancelado' && <TrocarQr id={e.id} />}
             {e.status !== 'cancelado' && <CancelarEvento id={e.id} />}
           </div>
         </section>

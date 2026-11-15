@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { randomBytes } from 'node:crypto';
+import { randomBytes, randomInt } from 'node:crypto';
 import { AppError, Erros } from '../common/errors';
 import { AuditoriaService } from '../database/auditoria.service';
 import { DatabaseService } from '../database/database.service';
@@ -147,5 +147,42 @@ export class CadastroService {
 
   recusar(user: UsuarioAutenticado, membroId: string, ip?: string) {
     return this.decidir(user, membroId, false, ip);
+  }
+
+  // ---------- membros: busca e redefinição de senha (Secretaria) ----------
+
+  async membros(q?: string) {
+    const org = await this.organizacao.id();
+    const termo = q?.trim() ? `%${q.trim().replace(/[%_\\]/g, '')}%` : null;
+    const r = await this.db.query<{ id: string; nome_completo: string; cpf_cifrado: Buffer | null; telefone: string | null; email: string | null; status: string }>(
+      `SELECT id, nome_completo, cpf_cifrado, telefone, email, status
+         FROM membros
+        WHERE organizacao_id = $1 AND anonimizado_em IS NULL AND excluido_em IS NULL AND usuario_id IS NOT NULL
+          AND ($2::text IS NULL OR nome_completo ILIKE $2)
+        ORDER BY nome_completo LIMIT 100`,
+      [org, termo],
+    );
+    return r.rows.map(({ cpf_cifrado, ...m }) => ({ ...m, cpf_mascarado: cpf_cifrado ? mascararCpf(this.crypto.decifrarCpf(cpf_cifrado)) : null }));
+  }
+
+  /** Gera uma senha temporária (mostrada uma única vez), encerra as sessões e destrava a conta. */
+  async redefinirSenha(user: UsuarioAutenticado, membroId: string, ip?: string): Promise<{ senha_temporaria: string }> {
+    const org = await this.organizacao.id();
+    const m = await this.db.query<{ usuario_id: string }>(
+      'SELECT usuario_id FROM membros WHERE id = $1 AND organizacao_id = $2 AND usuario_id IS NOT NULL AND excluido_em IS NULL',
+      [membroId, org],
+    );
+    if (!m.rows[0]) throw Erros.naoEncontrado('Membro não encontrado');
+    const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
+    const numeros = '23456789';
+    const pega = (alfabeto: string, n: number) => Array.from({ length: n }, () => alfabeto[randomInt(alfabeto.length)]).join('');
+    const senha = `${pega(letras, 4)}${pega(numeros, 3)}${pega(letras, 4)}`;
+    const novoHash = await hashSenha(senha);
+    await this.db.transaction(async (c) => {
+      await c.query('UPDATE usuarios SET senha_hash = $2, tentativas_falhas = 0, bloqueado_ate = NULL WHERE id = $1', [m.rows[0].usuario_id, novoHash]);
+      await c.query('UPDATE sessoes SET revogado_em = now() WHERE usuario_id = $1 AND revogado_em IS NULL', [m.rows[0].usuario_id]);
+      await this.auditoria.registrar('usuario.redefinir_senha', 'membros', membroId, user.id, null, ip, c);
+    });
+    return { senha_temporaria: senha };
   }
 }
