@@ -86,6 +86,20 @@ export class EventosService {
     void this.push.avisar({ titulo: `Evento cancelado: ${r.rows[0].nome}`, texto: 'Fique de olho nos avisos para saber os próximos passos.', url: '/portal', soCoordenacao: false });
   }
 
+  /** Exclui o evento: some de todas as listas e planilhas. A linha continua no banco (trilha de auditoria). */
+  async excluir(user: UsuarioAutenticado, id: string, ip?: string): Promise<void> {
+    const org = await this.organizacao.id();
+    await this.db.transaction(async (c) => {
+      const r = await c.query<{ nome: string }>(
+        `UPDATE eventos SET excluido_em = now(), checkin_token = NULL
+          WHERE id = $1 AND organizacao_id = $2 AND excluido_em IS NULL RETURNING nome`,
+        [id, org],
+      );
+      if (!r.rows[0]) throw Erros.naoEncontrado('Evento não encontrado');
+      await this.auditoria.registrar('evento.excluir', 'eventos', id, user.id, { nome: r.rows[0].nome }, ip, c);
+    });
+  }
+
   /** Troca o código do QR. O cartaz antigo deixa de funcionar na hora. */
   async novoQr(user: UsuarioAutenticado, id: string, ip?: string): Promise<{ checkin_token: string }> {
     const org = await this.organizacao.id();

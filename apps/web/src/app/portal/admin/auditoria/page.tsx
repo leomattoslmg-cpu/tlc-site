@@ -10,6 +10,7 @@ interface Reg { id: string; acao: string; entidade: string; depois: Record<strin
 const ACOES: Record<string, string> = {
   'evento.criar': 'Criou um evento',
   'evento.cancelar': 'Cancelou um evento',
+  'evento.excluir': 'Excluiu um evento',
   'evento.trocar_qr': 'Trocou o QR Code de um evento',
   'evento.presenca': 'Presença marcada',
   'relatorio.exportar': 'Baixou uma planilha',

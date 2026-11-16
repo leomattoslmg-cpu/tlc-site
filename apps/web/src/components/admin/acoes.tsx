@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { chamarPortal } from '@/lib/cliente';
 
 /** Botão que chama a API, atualiza a página e mostra o erro, se houver. */
-function Acao({ rotulo, ocupado, caminho, metodo = 'POST', corpo, confirmar, classe = 'btn-secundario' }: { rotulo: string; ocupado: string; caminho: string; metodo?: 'POST' | 'DELETE'; corpo?: unknown; confirmar?: string; classe?: string }) {
+function Acao({ rotulo, ocupado, caminho, metodo = 'POST', corpo, confirmar, classe = 'btn-secundario', depois }: { rotulo: string; ocupado: string; caminho: string; metodo?: 'POST' | 'DELETE'; corpo?: unknown; confirmar?: string; classe?: string; depois?: string }) {
   const router = useRouter();
   const [enviando, setEnviando] = useState(false);
   const [erro, setErro] = useState('');
@@ -16,6 +16,7 @@ function Acao({ rotulo, ocupado, caminho, metodo = 'POST', corpo, confirmar, cla
     const r = await chamarPortal(caminho, metodo, corpo);
     setEnviando(false);
     if (!r.ok) return setErro(r.mensagem ?? 'Não foi possível concluir.');
+    if (depois) router.push(depois);
     router.refresh();
   }
   return (
@@ -28,6 +29,16 @@ function Acao({ rotulo, ocupado, caminho, metodo = 'POST', corpo, confirmar, cla
 
 export const CancelarEvento = ({ id }: { id: string }) => (
   <Acao rotulo="Cancelar evento" ocupado="Cancelando…" caminho={`eventos/${id}/cancelar`} confirmar="Cancelar este evento? A presença deixa de poder ser marcada." />
+);
+export const ExcluirEvento = ({ id, presentes, depois }: { id: string; presentes: number; depois?: string }) => (
+  <Acao
+    rotulo="Excluir evento"
+    ocupado="Excluindo…"
+    caminho={`eventos/${id}`}
+    metodo="DELETE"
+    depois={depois}
+    confirmar={`Excluir este evento de vez? Ele some da lista e das planilhas${presentes > 0 ? `, e as ${presentes} presença(s) deixam de contar na frequência` : ''}. Não dá para desfazer pela tela.`}
+  />
 );
 export const AprovarMembro = ({ id }: { id: string }) => <Acao rotulo="Aprovar" ocupado="Aprovando…" caminho={`membros-pendentes/${id}/aprovar`} classe="btn-primario" />;
 export const RecusarMembro = ({ id }: { id: string }) => (

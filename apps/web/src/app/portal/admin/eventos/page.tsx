@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AdminNav, SemAcesso } from '@/components/admin/admin-nav';
+import { ExcluirEvento } from '@/components/admin/acoes';
 import { NovoEventoForm } from '@/components/admin/novo-evento-form';
 import { dataHoraLonga } from '@/lib/format';
 import { apiAutenticada } from '@/lib/sessao';
@@ -31,6 +32,7 @@ export default async function Eventos() {
                     <Link href={`/portal/admin/eventos/${e.id}`} className="text-lg font-semibold text-primaria underline">{e.nome}</Link>
                     <p className="text-sm text-texto-apoio">{dataHoraLonga(e.inicio_em)}{e.local_nome ? ` · ${e.local_nome}` : ''}</p>
                     <p className="mt-1 text-sm">{e.status === 'cancelado' ? 'Cancelado' : `${e.presentes} presente(s)`}</p>
+                    <div className="mt-3"><ExcluirEvento id={e.id} presentes={e.presentes} /></div>
                   </li>
                 ))}
               </ul>

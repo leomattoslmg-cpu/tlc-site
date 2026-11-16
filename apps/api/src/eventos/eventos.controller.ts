@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, HttpCode, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Header, HttpCode, Param, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { AuthGuard, RequisicaoAutenticada } from '../auth/auth.guard';
 import { Permissao, PermissaoGuard } from '../auth/permissao.guard';
@@ -42,6 +42,14 @@ export class EventosController {
   @Permissao('eventos:editar')
   novoQr(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Req() req: RequisicaoAutenticada) {
     return this.eventos.novoQr(usuario(req), id, req.ip);
+  }
+
+  // Exclusão: o evento some da lista, das planilhas e do site (os dados ficam guardados no banco para a auditoria).
+  @Delete(':id')
+  @HttpCode(204)
+  @Permissao('eventos:editar')
+  async excluir(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Req() req: RequisicaoAutenticada): Promise<void> {
+    await this.eventos.excluir(usuario(req), id, req.ip);
   }
 
   @Post(':id/cancelar')
