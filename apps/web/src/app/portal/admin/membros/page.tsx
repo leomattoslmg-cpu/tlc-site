@@ -1,19 +1,20 @@
 import type { Metadata } from 'next';
 import { AdminNav, SemAcesso } from '@/components/admin/admin-nav';
-import { AprovarMembro, RecusarMembro, RedefinirSenha } from '@/components/admin/acoes';
+import { AprovarMembro, Cargos, RecusarMembro, RedefinirSenha } from '@/components/admin/acoes';
 import { apiAutenticada } from '@/lib/sessao';
 
 export const metadata: Metadata = { title: 'Membros', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
 interface Pendente { id: string; nome_completo: string; cpf_mascarado: string | null; email: string | null; telefone: string | null; edicao_tlc: string | null; comunidade: string | null; cidade: string | null }
-interface Membro { id: string; nome_completo: string; cpf_mascarado: string | null; telefone: string | null; edicao_tlc: string | null; comunidade: string | null; cidade: string | null; status: string }
+interface Membro { id: string; nome_completo: string; cpf_mascarado: string | null; telefone: string | null; edicao_tlc: string | null; comunidade: string | null; cidade: string | null; status: string; cargos?: string[] }
 
 export default async function Membros({ searchParams }: { searchParams: { q?: string } }) {
   const q = typeof searchParams.q === 'string' ? searchParams.q.slice(0, 80) : '';
-  const [pend, lista] = await Promise.all([
+  const [pend, lista, cargos] = await Promise.all([
     apiAutenticada<{ data: Pendente[] }>('/membros-pendentes'),
     apiAutenticada<{ data: Membro[] }>(`/membros?q=${encodeURIComponent(q)}`),
+    apiAutenticada<{ data: { codigo: string; nome: string }[] }>('/cargos'), // só o Super Administrador recebe
   ]);
   if (!pend) {
     return (
@@ -68,6 +69,7 @@ export default async function Membros({ searchParams }: { searchParams: { q?: st
                   <p className="text-sm text-texto-apoio">CPF {m.cpf_mascarado} · {m.telefone} · {m.edicao_tlc || 'TLC não informado'} · {m.comunidade || 'sem comunidade'} · {m.cidade || 'sem cidade'} · {m.status}</p>
                 </div>
                 <RedefinirSenha id={m.id} nome={m.nome_completo} />
+                {cargos && m.status === 'ativo' && <Cargos id={m.id} nome={m.nome_completo} cargos={m.cargos ?? []} opcoes={cargos.data} />}
               </li>
             ))}
           </ul>

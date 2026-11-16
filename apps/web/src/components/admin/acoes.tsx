@@ -118,3 +118,39 @@ export function NovoConvite() {
     </form>
   );
 }
+
+/** Cargos de uma pessoa: o Super Administrador marca e desmarca. */
+export function Cargos({ id, nome, cargos, opcoes }: { id: string; nome: string; cargos: string[]; opcoes: { codigo: string; nome: string }[] }) {
+  const router = useRouter();
+  const [ativos, setAtivos] = useState<string[]>(cargos);
+  const [ocupado, setOcupado] = useState('');
+  const [erro, setErro] = useState('');
+  async function alternar(codigo: string, rotulo: string) {
+    const tem = ativos.includes(codigo);
+    if (!window.confirm(tem ? `Tirar o cargo "${rotulo}" de ${nome}?` : `Dar o cargo "${rotulo}" a ${nome}?`)) return;
+    setOcupado(codigo);
+    setErro('');
+    const r = await chamarPortal(`membros/${id}/cargos/${codigo}`, tem ? 'DELETE' : 'POST');
+    setOcupado('');
+    if (!r.ok) return setErro(r.mensagem ?? 'Não foi possível alterar o cargo.');
+    setAtivos(tem ? ativos.filter((c) => c !== codigo) : [...ativos, codigo]);
+    router.refresh();
+  }
+  return (
+    <fieldset className="w-full">
+      <legend className="mb-1 text-sm font-semibold">Cargos</legend>
+      <div className="flex flex-wrap gap-2">
+        {opcoes.map((o) => {
+          const tem = ativos.includes(o.codigo);
+          return (
+            <button key={o.codigo} type="button" aria-pressed={tem} disabled={ocupado === o.codigo} onClick={() => alternar(o.codigo, o.nome)}
+              className={`${tem ? 'btn-primario' : 'btn-secundario'} min-h-[40px] px-3 text-sm disabled:opacity-60`}>
+              {tem ? '✓ ' : ''}{o.nome}
+            </button>
+          );
+        })}
+      </div>
+      {erro && <p role="alert" className="mt-1 text-sm font-semibold text-cat-importante">{erro}</p>}
+    </fieldset>
+  );
+}

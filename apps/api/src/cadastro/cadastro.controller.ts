@@ -8,7 +8,7 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { CaptchaService } from '../site/captcha.service';
 import { idSchema, tokenSchema } from '../eventos/eventos.schemas';
 import { CadastroInput, cadastroSchema, CriarConviteInput, criarConviteSchema } from './cadastro.schemas';
-import { CadastroService } from './cadastro.service';
+import { CadastroService, CARGOS } from './cadastro.service';
 
 function usuario(req: RequisicaoAutenticada) {
   if (!req.user) throw Erros.naoAutenticado();
@@ -95,6 +95,27 @@ export class CadastroAdminController {
   @Permissao('usuarios:redefinir_senha')
   redefinirSenha(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Req() req: RequisicaoAutenticada) {
     return this.cadastro.redefinirSenha(usuario(req), id, req.ip);
+  }
+
+  // Só o Super Administrador (permissão administradores:gerir) dá e tira cargos.
+  @Get('cargos')
+  @Permissao('administradores:gerir')
+  listarCargos() {
+    return { data: CARGOS };
+  }
+
+  @Post('membros/:id/cargos/:codigo')
+  @HttpCode(204)
+  @Permissao('administradores:gerir')
+  async darCargo(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Param('codigo') codigo: string, @Req() req: RequisicaoAutenticada): Promise<void> {
+    await this.cadastro.darCargo(usuario(req), id, String(codigo).slice(0, 40), req.ip);
+  }
+
+  @Delete('membros/:id/cargos/:codigo')
+  @HttpCode(204)
+  @Permissao('administradores:gerir')
+  async tirarCargo(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Param('codigo') codigo: string, @Req() req: RequisicaoAutenticada): Promise<void> {
+    await this.cadastro.tirarCargo(usuario(req), id, String(codigo).slice(0, 40), req.ip);
   }
 
   @Get('membros-pendentes')

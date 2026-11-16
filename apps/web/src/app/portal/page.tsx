@@ -22,6 +22,10 @@ const ROTULO_PERFIL: Record<string, string> = {
   coordenador: 'Coordenação',
   lider: 'Líder',
   membro: 'Membro',
+  coordenador_geral: 'Coordenador(a) geral',
+  coordenador_diocesano: 'Coordenador(a) diocesano',
+  tesoureiro: 'Tesoureiro(a)',
+  marketing: 'Marketing',
 };
 
 async function carregarMe(): Promise<Me | null> {

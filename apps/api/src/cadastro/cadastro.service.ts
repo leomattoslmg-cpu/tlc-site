@@ -12,6 +12,17 @@ import type { CadastroInput, CriarConviteInput } from './cadastro.schemas';
 
 type Conv = { id: string; expira_em: Date; max_usos: number | null; usos: number; revogado_em: Date | null };
 
+/** Cargos que o Super Administrador pode dar (o código é o do perfil no banco). */
+export const CARGOS = [
+  { codigo: 'coordenador_geral', nome: 'Coordenador(a) geral' },
+  { codigo: 'coordenador_diocesano', nome: 'Coordenador(a) diocesano' },
+  { codigo: 'tesoureiro', nome: 'Tesoureiro(a)' },
+  { codigo: 'marketing', nome: 'Marketing' },
+  { codigo: 'admin', nome: 'Administrador(a)' },
+  { codigo: 'secretaria', nome: 'Secretaria' },
+  { codigo: 'coordenador', nome: 'Coordenador(a)' },
+] as const;
+
 const conviteInvalido = () => new AppError(410, 'INVITE_INVALID', 'Convite inválido ou vencido', 'Peça um QR Code novo à coordenação.');
 
 @Injectable()
@@ -159,15 +170,50 @@ export class CadastroService {
   async membros(q?: string) {
     const org = await this.organizacao.id();
     const termo = q?.trim() ? `%${q.trim().replace(/[%_\\]/g, '')}%` : null;
-    const r = await this.db.query<{ id: string; nome_completo: string; cpf_cifrado: Buffer | null; telefone: string | null; email: string | null; edicao_tlc: string | null; comunidade: string | null; cidade: string | null; status: string }>(
-      `SELECT id, nome_completo, cpf_cifrado, telefone, email, edicao_tlc, comunidade, cidade, status
-         FROM membros
-        WHERE organizacao_id = $1 AND anonimizado_em IS NULL AND excluido_em IS NULL AND usuario_id IS NOT NULL
-          AND ($2::text IS NULL OR nome_completo ILIKE $2)
-        ORDER BY nome_completo LIMIT 100`,
-      [org, termo],
+    const r = await this.db.query<{ id: string; nome_completo: string; cpf_cifrado: Buffer | null; telefone: string | null; email: string | null; edicao_tlc: string | null; comunidade: string | null; cidade: string | null; status: string; cargos: string[] }>(
+      `SELECT m.id, m.nome_completo, m.cpf_cifrado, m.telefone, m.email, m.edicao_tlc, m.comunidade, m.cidade, m.status,
+              COALESCE((SELECT array_agg(p.codigo ORDER BY p.nome) FROM usuario_perfis up JOIN perfis p ON p.id = up.perfil_id
+                         WHERE up.usuario_id = m.usuario_id AND p.codigo = ANY($3::text[])), '{}') AS cargos
+         FROM membros m
+        WHERE m.organizacao_id = $1 AND m.anonimizado_em IS NULL AND m.excluido_em IS NULL AND m.usuario_id IS NOT NULL
+          AND ($2::text IS NULL OR m.nome_completo ILIKE $2)
+        ORDER BY m.nome_completo LIMIT 100`,
+      [org, termo, CARGOS.map((c) => c.codigo)],
     );
     return r.rows.map(({ cpf_cifrado, ...m }) => ({ ...m, cpf_mascarado: cpf_cifrado ? mascararCpf(this.crypto.decifrarCpf(cpf_cifrado)) : null }));
+  }
+
+  private async alvoDoCargo(membroId: string, codigo: string) {
+    if (!CARGOS.some((c) => c.codigo === codigo)) throw new AppError(422, 'VALIDATION_ERROR', 'Cargo inválido', 'Escolha um cargo da lista.');
+    const org = await this.organizacao.id();
+    const m = await this.db.query<{ usuario_id: string; status: string }>(
+      `SELECT m.usuario_id, u.status FROM membros m JOIN usuarios u ON u.id = m.usuario_id
+        WHERE m.id = $1 AND m.organizacao_id = $2 AND m.excluido_em IS NULL AND m.anonimizado_em IS NULL`,
+      [membroId, org],
+    );
+    if (!m.rows[0]) throw Erros.naoEncontrado('Membro não encontrado');
+    return m.rows[0];
+  }
+
+  async darCargo(user: UsuarioAutenticado, membroId: string, codigo: string, ip?: string): Promise<void> {
+    const alvo = await this.alvoDoCargo(membroId, codigo);
+    if (alvo.status !== 'ativo') throw new AppError(409, 'CONFLICT', 'Cadastro ainda não aprovado', 'Aprove o cadastro antes de dar um cargo.');
+    await this.db.transaction(async (c) => {
+      const r = await c.query(
+        `INSERT INTO usuario_perfis (usuario_id, perfil_id, atribuido_por)
+         SELECT $1, id, $3 FROM perfis WHERE codigo = $2 ON CONFLICT DO NOTHING`,
+        [alvo.usuario_id, codigo, user.id],
+      );
+      if (r.rowCount) await this.auditoria.registrar('usuario.cargo_dado', 'membros', membroId, user.id, { cargo: codigo }, ip, c);
+    });
+  }
+
+  async tirarCargo(user: UsuarioAutenticado, membroId: string, codigo: string, ip?: string): Promise<void> {
+    const alvo = await this.alvoDoCargo(membroId, codigo);
+    await this.db.transaction(async (c) => {
+      const r = await c.query('DELETE FROM usuario_perfis WHERE usuario_id = $1 AND perfil_id = (SELECT id FROM perfis WHERE codigo = $2)', [alvo.usuario_id, codigo]);
+      if (r.rowCount) await this.auditoria.registrar('usuario.cargo_retirado', 'membros', membroId, user.id, { cargo: codigo }, ip, c);
+    });
   }
 
   /** Gera uma senha temporária (mostrada uma única vez), encerra as sessões e destrava a conta. */
