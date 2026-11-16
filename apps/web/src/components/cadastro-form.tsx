@@ -10,6 +10,7 @@ const TURNSTILE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? '';
 declare global {
   interface Window {
     tlcCaptcha?: (token: string) => void;
+    turnstile?: { reset: () => void };
   }
 }
 
@@ -100,6 +101,9 @@ export function CadastroForm({ token }: { token?: string }) {
     } catch {
       setErro('Sem conexão com o servidor. Confira a internet e tente de novo.');
     } finally {
+      // O captcha vale para um envio só: renova o quadro para a próxima tentativa.
+      setCaptcha('');
+      try { window.turnstile?.reset(); } catch { /* sem captcha */ }
       setEnviando(false);
     }
   }
