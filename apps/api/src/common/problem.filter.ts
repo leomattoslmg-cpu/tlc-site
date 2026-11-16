@@ -51,6 +51,11 @@ export class ProblemFilter implements ExceptionFilter {
     }
     if (e instanceof HttpException) {
       const status = e.getStatus();
+      // Versões novas do Nest embrulham o erro do body-parser (JSON malformado) numa HttpException 400.
+      const causa = (e as { cause?: { type?: string } }).cause;
+      if (status === 400 && (causa?.type === 'entity.parse.failed' || /JSON/i.test(e.message))) {
+        return { type: tipo('INVALID_JSON'), title: 'JSON inválido', status: 400, code: 'INVALID_JSON' };
+      }
       const base = PADRAO[status] ?? { code: 'ERROR', title: e.message };
       const r = e.getResponse();
       const detail = typeof r === 'string' ? r : undefined;
