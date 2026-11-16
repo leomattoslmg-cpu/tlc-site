@@ -1,23 +1,23 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { QrCode } from 'lucide-react';
+import { CadastroForm } from '@/components/cadastro-form';
+import { Guadalupe } from '@/components/guadalupe';
 
-export const metadata: Metadata = { title: 'Cadastro de membro' };
+export const metadata: Metadata = { title: 'Cadastro de TLCista' };
 
-export default function CadastroInicio() {
+export default function Cadastro() {
   return (
-    <section className="container-tlc grid place-items-center py-12">
-      <div className="cartao w-full max-w-lg space-y-5 p-6 text-center sm:p-8">
-        <QrCode className="mx-auto text-primaria" size={44} aria-hidden />
-        <h1 className="text-2xl">Cadastro de membro</h1>
-        <p className="text-lg text-texto-apoio">
-          Para se cadastrar, escaneie com a câmera do celular o <strong className="text-texto">QR Code do cadastro</strong>, que a coordenação do TLC mostra nos encontros ou envia a você.
-        </p>
-        <p className="text-texto-apoio">Você mesmo preenche o seu cadastro. Depois, a coordenação confere e aprova o seu acesso, e você já pode entrar com o CPF e a senha que criou.</p>
-        <div className="flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <Link href="/portal/entrar" className="btn-primario">Já tenho cadastro</Link>
-          <Link href="/contato" className="btn-secundario">Pedir o QR Code</Link>
+    <section className="container-tlc grid place-items-center py-10">
+      <div className="cartao w-full max-w-md p-6 sm:p-8">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <Guadalupe className="mb-3 h-20 w-16" />
+          <h1 className="text-2xl">Cadastro de TLCista</h1>
+          <p className="mt-1 text-texto-apoio">Este site é só para quem já fez o TLC. Depois do cadastro, a coordenação confere e libera o seu acesso.</p>
         </div>
+        <CadastroForm />
+        <p className="mt-6 text-center text-sm text-texto-apoio">
+          Já tem cadastro? <Link href="/portal/entrar" className="font-semibold text-primaria underline">Entrar</Link>
+        </p>
       </div>
     </section>
   );

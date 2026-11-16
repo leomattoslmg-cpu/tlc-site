@@ -66,17 +66,22 @@ export class CadastroService {
   }
 
   /** O próprio membro se cadastra. Fica "pendente" até a Secretaria aprovar. */
-  async cadastrar(token: string, d: CadastroInput, ip?: string): Promise<void> {
+  async cadastrar(token: string | null, d: CadastroInput, ip?: string): Promise<void> {
     const org = await this.organizacao.id();
     const senhaHash = await hashSenha(d.senha);
     try {
       await this.db.transaction(async (c) => {
-        const conv = await c.query<Conv>(
-          'SELECT id, expira_em, max_usos, usos, revogado_em FROM convites_cadastro WHERE token = $1 AND organizacao_id = $2 FOR UPDATE',
-          [token, org],
-        );
-        const cv = conv.rows[0];
-        if (!cv || cv.revogado_em || cv.expira_em.getTime() <= Date.now() || (cv.max_usos !== null && cv.usos >= cv.max_usos)) throw conviteInvalido();
+        // Com convite (QR antigo), o convite é validado e contado; sem convite, o cadastro é aberto e segue para aprovação.
+        let conviteId: string | null = null;
+        if (token) {
+          const conv = await c.query<Conv>(
+            'SELECT id, expira_em, max_usos, usos, revogado_em FROM convites_cadastro WHERE token = $1 AND organizacao_id = $2 FOR UPDATE',
+            [token, org],
+          );
+          const cv = conv.rows[0];
+          if (!cv || cv.revogado_em || cv.expira_em.getTime() <= Date.now() || (cv.max_usos !== null && cv.usos >= cv.max_usos)) throw conviteInvalido();
+          conviteId = cv.id;
+        }
 
         const hashCpf = this.crypto.hashCpf(d.cpf);
         const dup = await c.query('SELECT 1 FROM membros WHERE organizacao_id = $1 AND cpf_hash = $2', [org, hashCpf]);
@@ -94,11 +99,11 @@ export class CadastroService {
           `INSERT INTO membros (organizacao_id, usuario_id, igreja_id, nome_completo, cpf_cifrado, cpf_hash, data_nascimento,
                                 telefone, whatsapp, email, status, termo_aceito_em, termo_versao, convite_id, edicao_tlc, comunidade, cidade)
            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9, 'pendente', now(), '1', $10, $11, $12, $13) RETURNING id`,
-          [org, u.rows[0].id, ig.rows[0].id, d.nome, this.crypto.cifrarCpf(d.cpf), hashCpf, d.nascimento, d.telefone, d.email, cv.id, d.edicao_tlc, d.comunidade, d.cidade],
+          [org, u.rows[0].id, ig.rows[0].id, d.nome, this.crypto.cifrarCpf(d.cpf), hashCpf, d.nascimento, d.telefone, d.email, conviteId, d.edicao_tlc, d.comunidade, d.cidade],
         );
         await c.query("INSERT INTO usuario_perfis (usuario_id, perfil_id) SELECT $1, id FROM perfis WHERE codigo = 'membro'", [u.rows[0].id]);
-        await c.query('UPDATE convites_cadastro SET usos = usos + 1 WHERE id = $1', [cv.id]);
-        await this.auditoria.registrar('membro.autocadastro', 'membros', m.rows[0].id, u.rows[0].id, { convite_id: cv.id }, ip, c);
+        if (conviteId) await c.query('UPDATE convites_cadastro SET usos = usos + 1 WHERE id = $1', [conviteId]);
+        await this.auditoria.registrar('membro.autocadastro', 'membros', m.rows[0].id, u.rows[0].id, { convite_id: conviteId }, ip, c);
       });
     } catch (e) {
       if (e instanceof AppError) throw e;

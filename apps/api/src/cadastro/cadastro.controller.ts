@@ -25,6 +25,13 @@ export class CadastroPublicoController {
     private readonly captcha: CaptchaService,
   ) {}
 
+  /** Cadastro aberto: o próprio TLCista se cadastra e a coordenação aprova depois. */
+  @Post()
+  @HttpCode(201)
+  async cadastrarAberto(@Body(new ZodValidationPipe(cadastroSchema)) corpo: CadastroInput, @Req() req: Request) {
+    return this.executar(null, corpo, req);
+  }
+
   @Get(':token')
   async valido(@Param('token', new ZodValidationPipe(tokenSchema)) token: string) {
     return { valido: await this.cadastro.conviteValido(token) };
@@ -37,6 +44,10 @@ export class CadastroPublicoController {
     @Body(new ZodValidationPipe(cadastroSchema)) corpo: CadastroInput,
     @Req() req: Request,
   ) {
+    return this.executar(token, corpo, req);
+  }
+
+  private async executar(token: string | null, corpo: CadastroInput, req: Request) {
     this.limite.consumir(req.ip ?? 'anonimo');
     if (!(await this.captcha.verificar(corpo.captcha_token, req.ip))) {
       throw new AppError(422, 'CAPTCHA_INVALID', 'Verificação do captcha falhou', 'Confirme que você não é um robô e tente de novo', [

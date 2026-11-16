@@ -64,7 +64,7 @@ export default async function Home() {
         <div className="cartao flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 id="membro" className="text-2xl">Faça parte do TLC</h2>
-            <p className="mt-1 max-w-xl text-base text-texto-apoio">O cadastro de novos membros é feito pelo QR Code fornecido pela coordenação. Quem já é membro entra com o CPF e a senha.</p>
+            <p className="mt-1 max-w-xl text-base text-texto-apoio">Se você fez o TLC, faça o seu cadastro. A coordenação confere e libera o acesso. Quem já é membro entra com o CPF e a senha.</p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
             <Link href="/cadastro" className="btn-primario">Quero me cadastrar</Link>

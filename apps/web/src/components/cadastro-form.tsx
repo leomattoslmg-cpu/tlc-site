@@ -22,7 +22,7 @@ function L({ id, t }: { id: string; t: string }) {
   return <label htmlFor={id} className="mb-1 block text-base font-semibold">{t}</label>;
 }
 
-export function CadastroForm({ token }: { token: string }) {
+export function CadastroForm({ token }: { token?: string }) {
   const [v, setV] = useState({ nome: '', cpf: '', email: '', nascimento: '', edicao: '', comunidade: '', telefone: '', cidade: '', senha: '' });
   const [termo, setTermo] = useState(false);
   const [captcha, setCaptcha] = useState('');
@@ -57,7 +57,7 @@ export function CadastroForm({ token }: { token: string }) {
 
     setEnviando(true);
     try {
-      const r = await fetch(`${API_URL}/public/cadastro/${encodeURIComponent(token)}`, {
+      const r = await fetch(token ? `${API_URL}/public/cadastro/${encodeURIComponent(token)}` : `${API_URL}/public/cadastro`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({

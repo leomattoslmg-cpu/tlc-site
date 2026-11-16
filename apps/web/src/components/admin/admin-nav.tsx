@@ -2,7 +2,7 @@ import Link from 'next/link';
 
 const ITENS = [
   { href: '/portal/admin/eventos', rotulo: 'Eventos e presença' },
-  { href: '/portal/admin/membros', rotulo: 'Membros e QR de cadastro' },
+  { href: '/portal/admin/membros', rotulo: 'Membros e aprovações' },
   { href: '/portal/admin/relatorios', rotulo: 'Planilhas' },
 ];
 
