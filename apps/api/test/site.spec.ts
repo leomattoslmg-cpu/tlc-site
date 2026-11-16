@@ -95,7 +95,8 @@ describe('rotas públicas do site', () => {
     });
 
     it('sem captcha_token dá 422 e não grava', async () => {
-      const { captcha_token: _, ...semToken } = valido;
+      const semToken: Record<string, unknown> = { ...valido };
+      delete semToken.captcha_token;
       await http().post('/v1/public/contato').send(semToken).expect(422);
     });
 

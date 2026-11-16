@@ -8,18 +8,24 @@ import { chamarApi, COOKIE_ACESSO } from '@/lib/sessao';
 export const metadata: Metadata = { title: 'Meus dados', robots: { index: false } };
 export const dynamic = 'force-dynamic';
 
+type MembroLogado = DadosMembro & { cpf_mascarado: string | null };
+
+async function carregar(token: string): Promise<{ membro: MembroLogado | null; expirou: boolean }> {
+  try {
+    const r = await chamarApi('/me', {}, token);
+    if (r.status === 401) return { membro: null, expirou: true };
+    if (!r.ok) return { membro: null, expirou: false };
+    const d = (await r.json()) as { membro: MembroLogado | null };
+    return { membro: d.membro, expirou: false };
+  } catch {
+    return { membro: null, expirou: false };
+  }
+}
+
 export default async function Dados() {
   const token = cookies().get(COOKIE_ACESSO)?.value;
   if (!token) redirect('/portal/entrar?proximo=/portal/dados');
-  let membro: (DadosMembro & { cpf_mascarado: string | null }) | null = null;
-  let expirou = false;
-  try {
-    const r = await chamarApi('/me', {}, token);
-    expirou = r.status === 401;
-    if (r.ok) membro = ((await r.json()) as { membro: typeof membro }).membro;
-  } catch {
-    /* mostra aviso abaixo */
-  }
+  const { membro, expirou } = await carregar(token);
   if (expirou) redirect('/portal/entrar?proximo=/portal/dados');
   return (
     <section className="container-tlc grid py-10">
