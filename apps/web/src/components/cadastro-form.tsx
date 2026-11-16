@@ -76,7 +76,8 @@ export function CadastroForm({ token }: { token?: string }) {
       });
       if (r.status === 201) return setFeito(true);
       const d = (await r.json().catch(() => null)) as { detail?: string; title?: string; errors?: { mensagem: string }[] } | null;
-      setErro(d?.errors?.[0]?.mensagem || d?.detail || d?.title || 'Não foi possível concluir o cadastro.');
+      const acordando = [502, 503, 504].includes(r.status);
+      setErro(d?.errors?.[0]?.mensagem || d?.detail || d?.title || (acordando ? 'O servidor está acordando. Espere 1 minuto e envie de novo.' : `Não foi possível concluir o cadastro (erro ${r.status}). Tente de novo em instantes.`));
     } catch {
       setErro('Sem conexão com o servidor. Confira a internet e tente de novo.');
     } finally {
@@ -100,7 +101,7 @@ export function CadastroForm({ token }: { token?: string }) {
       <div><L id="nome" t="Nome completo" /><input id="nome" autoComplete="name" className="campo" {...campo('nome')} /></div>
       <div><L id="cpf" t="CPF" /><input id="cpf" inputMode="numeric" placeholder="000.000.000-00" className="campo" value={v.cpf} onChange={(e) => setV({ ...v, cpf: mascaraCpf(e.target.value) })} /></div>
       <div><L id="email" t="E-mail" /><input id="email" type="email" inputMode="email" autoComplete="email" className="campo" {...campo('email')} /></div>
-      <div><L id="nasc" t="Data de nascimento" /><input id="nasc" type="date" autoComplete="bday" className="campo" value={v.nascimento} onChange={(e) => setV({ ...v, nascimento: e.target.value })} /></div>
+      <div><L id="nasc" t="Data de nascimento" /><input id="nasc" type="date" autoComplete="bday" className="campo min-w-0 max-w-full appearance-none" value={v.nascimento} onChange={(e) => setV({ ...v, nascimento: e.target.value })} /></div>
       <div><L id="edicao" t="Qual TLC você fez?" /><input id="edicao" className="campo" placeholder="Ex.: 87º TLC" {...campo('edicao')} /></div>
       <div><L id="comunidade" t="Em qual comunidade você serve?" /><input id="comunidade" className="campo" {...campo('comunidade')} /></div>
       <div><L id="tel" t="Telefone (WhatsApp)" /><input id="tel" type="tel" inputMode="tel" autoComplete="tel" placeholder="(67) 99999-9999" className="campo" {...campo('telefone')} /></div>
