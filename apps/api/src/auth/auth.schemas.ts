@@ -26,3 +26,14 @@ export const trocarSenhaSchema = z.object({
   senha_nova: z.string().min(1, 'Informe a nova senha').max(200),
 });
 export type TrocarSenhaInput = z.infer<typeof trocarSenhaSchema>;
+
+export const atualizarDadosSchema = z.object({
+  nome: z.string().trim().min(3, 'Informe o nome completo').max(160),
+  nascimento: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Informe a data de nascimento'),
+  email: z.string().trim().toLowerCase().email('Confira o e-mail'),
+  telefone: z.string().regex(/^\+[1-9]\d{7,14}$/, 'Telefone com DDD, por exemplo (67) 99999-9999'),
+  cidade: z.string().trim().min(2, 'Informe a cidade').max(80),
+  comunidade: z.string().trim().min(2, 'Informe em qual comunidade você serve').max(100),
+  edicao_tlc: z.string().trim().min(1, 'Informe qual TLC você fez').max(60),
+});
+export type AtualizarDadosInput = z.infer<typeof atualizarDadosSchema>;

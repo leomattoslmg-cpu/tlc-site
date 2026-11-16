@@ -51,7 +51,10 @@ export default async function Portal() {
         <div>
           <h1 className="text-2xl sm:text-3xl">Paz e bem, {primeiro}!</h1>
           <p className="mt-1 text-texto-apoio">{perfis.join(' · ')}</p>
-          <Link href="/portal/senha" className="mt-2 inline-block font-semibold text-primaria underline">Trocar minha senha</Link>
+          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
+            <Link href="/portal/dados" className="font-semibold text-primaria underline">Atualizar meus dados</Link>
+            <Link href="/portal/senha" className="font-semibold text-primaria underline">Trocar minha senha</Link>
+          </div>
         </div>
         <form action="/api/portal/sair" method="post">
           <button type="submit" className="btn-secundario min-h-[44px] gap-2 px-4">
@@ -76,6 +79,7 @@ export default async function Portal() {
             <Linha t="Telefone" v={me.membro?.telefone} />
             <Linha t="Igreja" v={me.membro?.igreja.nome} />
           </dl>
+          <Link href="/portal/dados" className="mt-4 inline-block font-semibold text-primaria underline">Atualizar meus dados</Link>
         </section>
 
         <section className="cartao p-5" aria-labelledby="avisos">

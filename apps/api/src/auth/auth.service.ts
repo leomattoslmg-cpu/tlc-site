@@ -8,7 +8,8 @@ import { CryptoService, sha256 } from './crypto.service';
 import { mascararCpf } from './cpf';
 import { conferirSenha, erroDeSenha, hashSenha } from './senha';
 import type { TokenPair, UsuarioAutenticado } from './auth.types';
-import type { LoginInput } from './auth.schemas';
+import type { AtualizarDadosInput, LoginInput } from './auth.schemas';
+import { AuditoriaService } from '../database/auditoria.service';
 
 const ACESSO_SEGUNDOS = 15 * 60; // RN-AUT-07
 const REFRESH_DIAS = 30; // RN-AUT-07
@@ -28,6 +29,7 @@ export class AuthService {
     private readonly db: DatabaseService,
     private readonly organizacao: OrganizacaoService,
     private readonly crypto: CryptoService,
+    private readonly auditoria: AuditoriaService,
   ) {}
 
   private credenciaisInvalidas = () => new AppError(401, 'INVALID_CREDENTIALS', 'Credenciais inválidas');
@@ -145,7 +147,7 @@ export class AuthService {
     const r = await this.db.query(
       `SELECT u.id AS uid, u.email, u.status, u.ultimo_login_em, u.criado_em,
               m.id AS mid, m.nome_completo, m.cpf_cifrado, m.data_nascimento, m.telefone, m.whatsapp,
-              m.email AS membro_email, m.status AS membro_status, m.igreja_id, i.nome AS igreja_nome
+              m.email AS membro_email, m.cidade, m.comunidade, m.edicao_tlc, m.status AS membro_status, m.igreja_id, i.nome AS igreja_nome
          FROM usuarios u
          LEFT JOIN membros m ON m.usuario_id = u.id
          LEFT JOIN igrejas i ON i.id = m.igreja_id
@@ -169,11 +171,36 @@ export class AuthService {
             telefone: x.telefone,
             whatsapp: x.whatsapp,
             email: x.membro_email,
+            cidade: x.cidade,
+            comunidade: x.comunidade,
+            edicao_tlc: x.edicao_tlc,
             status: x.membro_status,
             igreja: { id: x.igreja_id, nome: x.igreja_nome },
           }
         : null,
     };
+  }
+
+  /** O próprio membro atualiza seus dados (o CPF não muda por aqui: é o login). */
+  async atualizarDados(user: UsuarioAutenticado, d: AtualizarDadosInput, ip?: string): Promise<void> {
+    try {
+      await this.db.transaction(async (c) => {
+        const r = await c.query<{ id: string }>(
+          `UPDATE membros SET nome_completo = $2, data_nascimento = $3, email = $4, telefone = $5, whatsapp = $5,
+                  cidade = $6, comunidade = $7, edicao_tlc = $8, atualizado_em = now()
+            WHERE usuario_id = $1 AND excluido_em IS NULL AND anonimizado_em IS NULL RETURNING id`,
+          [user.id, d.nome, d.nascimento, d.email, d.telefone, d.cidade, d.comunidade, d.edicao_tlc],
+        );
+        if (!r.rows[0]) throw new AppError(404, 'NOT_FOUND', 'Cadastro não encontrado', 'Este usuário não tem ficha de membro.');
+        await c.query('UPDATE usuarios SET email = $2 WHERE id = $1', [user.id, d.email]);
+        await this.auditoria.registrar('membro.atualizar_dados', 'membro', r.rows[0].id, user.id, { campos: ['nome', 'nascimento', 'email', 'telefone', 'cidade', 'comunidade', 'edicao_tlc'] }, ip, c);
+      });
+    } catch (e) {
+      const err = e as { code?: string; message?: string };
+      if (err.code === '23505') throw new AppError(409, 'ALREADY_EXISTS', 'E-mail já em uso', 'Este e-mail já está cadastrado em outra conta.');
+      if (err.code === '23514' && err.message?.includes('13 anos')) throw new AppError(422, 'AGE_MIN', 'Idade mínima não atendida', 'O cadastro é permitido a partir de 13 anos.');
+      throw e;
+    }
   }
 
   async permissoes(usuarioId: string): Promise<string[]> {

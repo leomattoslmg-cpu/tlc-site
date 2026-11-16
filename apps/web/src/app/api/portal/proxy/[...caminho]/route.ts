@@ -55,4 +55,4 @@ async function repassar(req: NextRequest, { params }: { params: { caminho: strin
   return resp;
 }
 
-export { repassar as GET, repassar as POST, repassar as DELETE };
+export { repassar as GET, repassar as POST, repassar as DELETE, repassar as PATCH };

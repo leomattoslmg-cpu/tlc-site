@@ -1,5 +1,5 @@
 /** Chamadas do navegador ao proxy do portal (/api/portal/proxy/...). Devolve sempre uma mensagem pronta para mostrar. */
-export async function chamarPortal(caminho: string, metodo: 'GET' | 'POST' | 'DELETE' = 'POST', corpo?: unknown) {
+export async function chamarPortal(caminho: string, metodo: 'GET' | 'POST' | 'DELETE' | 'PATCH' = 'POST', corpo?: unknown) {
   try {
     const r = await fetch(`/api/portal/proxy/${caminho}`, {
       method: metodo,

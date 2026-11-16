@@ -1,10 +1,10 @@
-import { Body, Controller, Get, HttpCode, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import type { Request } from 'express';
 import { Erros } from '../common/errors';
 import { RateLimiter } from '../common/rate-limit';
 import { ZodValidationPipe } from '../common/zod-validation.pipe';
 import { AuthGuard, RequisicaoAutenticada } from './auth.guard';
-import { LoginInput, loginSchema, refreshSchema, TrocarSenhaInput, trocarSenhaSchema } from './auth.schemas';
+import { AtualizarDadosInput, atualizarDadosSchema, LoginInput, loginSchema, refreshSchema, TrocarSenhaInput, trocarSenhaSchema } from './auth.schemas';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -56,6 +56,13 @@ export class MeController {
     if (!req.user) throw Erros.naoAutenticado();
     this.limiteSenha.consumir(req.user.id);
     await this.auth.trocarSenha(req.user, corpo.senha_atual, corpo.senha_nova);
+  }
+
+  @Patch('dados')
+  @HttpCode(204)
+  async atualizarDados(@Body(new ZodValidationPipe(atualizarDadosSchema)) corpo: AtualizarDadosInput, @Req() req: RequisicaoAutenticada): Promise<void> {
+    if (!req.user) throw Erros.naoAutenticado();
+    await this.auth.atualizarDados(req.user, corpo, req.ip);
   }
 
   @Get('permissoes')
