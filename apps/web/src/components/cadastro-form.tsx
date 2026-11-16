@@ -96,7 +96,7 @@ export function CadastroForm({ token }: { token?: string }) {
       if (r.status === 201) return setFeito(true);
       const d = (await r.json().catch(() => null)) as { detail?: string; title?: string; errors?: { mensagem: string }[] } | null;
       const acordando = [502, 503, 504].includes(r.status);
-      setErro(d?.errors?.[0]?.mensagem || d?.detail || d?.title || (acordando ? 'O servidor está acordando. Espere 1 minuto e envie de novo.' : `Não foi possível concluir o cadastro (erro ${r.status}). Tente de novo em instantes.`));
+      setErro(d?.errors?.[0]?.mensagem || d?.detail || d?.title || (acordando ? 'O servidor está acordando. Espere 1 minuto e envie de novo.' : `Não foi possível concluir o cadastro (erro ${r.status}). Detalhe técnico: ${r.url || 'sem endereço'} [${r.headers.get('content-type') ?? 'sem tipo'}]. Tente de novo em instantes.`));
     } catch {
       setErro('Sem conexão com o servidor. Confira a internet e tente de novo.');
     } finally {
