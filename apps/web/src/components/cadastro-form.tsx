@@ -39,7 +39,7 @@ function dataParaIso(v: string): string | null {
 }
 
 export function CadastroForm({ token }: { token?: string }) {
-  const [v, setV] = useState({ nome: '', cpf: '', email: '', nascimento: '', edicao: '', comunidade: '', telefone: '', cidade: '', senha: '' });
+  const [v, setV] = useState({ nome: '', cpf: '', email: '', nascimento: '', edicao: '', comunidade: '', telefone: '', cidade: '', senha: '', senha2: '' });
   const [termo, setTermo] = useState(false);
   const [captcha, setCaptcha] = useState('');
   const [erro, setErro] = useState('');
@@ -69,6 +69,7 @@ export function CadastroForm({ token }: { token?: string }) {
     if (tel.length < 10 || tel.length > 11) return setErro('Telefone com DDD, por exemplo (67) 99999-9999.');
     if (v.cidade.trim().length < 2) return setErro('Informe a cidade.');
     if (v.senha.length < 8 || !/\d/.test(v.senha) || !/[A-Za-zÀ-ÿ]/.test(v.senha)) return setErro('A senha precisa ter ao menos 8 caracteres, com letra e número.');
+    if (v.senha !== v.senha2) return setErro('As duas senhas não são iguais. Digite a mesma senha nos dois campos.');
     if (!termo) return setErro('É preciso aceitar o uso dos dados para se cadastrar.');
     if (TURNSTILE_KEY && !captcha) return setErro('Confirme que você não é um robô.');
 
@@ -128,6 +129,7 @@ export function CadastroForm({ token }: { token?: string }) {
         <input id="senha" type="password" autoComplete="new-password" className="campo" {...campo('senha')} />
         <p className="mt-1 text-sm text-texto-apoio">Mínimo de 8 caracteres, com letra e número.</p>
       </div>
+      <div><L id="senha2" t="Repita a senha" /><input id="senha2" type="password" autoComplete="new-password" className="campo" {...campo('senha2')} /></div>
       <label className="flex items-start gap-3 text-base">
         <input type="checkbox" checked={termo} onChange={(e) => setTermo(e.target.checked)} className="mt-1 h-5 w-5 shrink-0" />
         <span>Concordo com o uso dos meus dados pelo TLC, como explica a <Link href="/privacidade" target="_blank" className="font-semibold text-primaria underline">política de privacidade</Link>.</span>
