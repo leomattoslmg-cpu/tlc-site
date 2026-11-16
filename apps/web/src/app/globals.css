@@ -50,7 +50,25 @@ h1, h2, h3 { @apply font-semibold text-texto; }
   .btn-primario { @apply btn bg-primaria text-primaria-sobre hover:bg-primaria-forte; }
   .btn-secundario { @apply btn border border-primaria text-primaria hover:bg-superficie; }
   .cartao { @apply rounded-cartao border border-borda bg-fundo shadow-cartao; }
-  .campo { @apply min-h-[48px] w-full rounded-cartao border border-borda bg-fundo px-3 text-base text-texto placeholder:text-texto-apoio; }
+  .campo { @apply box-border min-h-[48px] w-full min-w-0 max-w-full rounded-cartao border border-borda bg-fundo px-3 text-base text-texto placeholder:text-texto-apoio; }
+}
+
+/* iPhone/Android dão largura própria aos campos de data e hora e eles vazam do cartão: força a largura do formulário. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  text-align: left;
+}
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+  min-height: 1.5em;
 }
 
 /* Luz dourada atrás da imagem de Guadalupe (página inicial) */

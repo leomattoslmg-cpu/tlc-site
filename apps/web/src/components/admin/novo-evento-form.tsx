@@ -37,7 +37,7 @@ export function NovoEventoForm() {
     <form onSubmit={criar} noValidate className="cartao space-y-4 p-5">
       <h2 className="text-lg">Novo evento</h2>
       <div><label htmlFor="ev-nome" className="mb-1 block font-semibold">Nome</label><input id="ev-nome" className="campo" value={v.nome} onChange={set('nome')} placeholder="Ex.: Formação de líderes" /></div>
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-3 [&>*]:min-w-0">
         <div><label htmlFor="ev-data" className="mb-1 block font-semibold">Dia</label><input id="ev-data" type="date" className="campo" value={v.data} onChange={set('data')} /></div>
         <div><label htmlFor="ev-ini" className="mb-1 block font-semibold">Início</label><input id="ev-ini" type="time" className="campo" value={v.inicio} onChange={set('inicio')} /></div>
         <div><label htmlFor="ev-fim" className="mb-1 block font-semibold">Fim</label><input id="ev-fim" type="time" className="campo" value={v.fim} onChange={set('fim')} /></div>
