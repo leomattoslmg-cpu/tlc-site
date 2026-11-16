@@ -3,6 +3,8 @@ import { AuditoriaService } from '../database/auditoria.service';
 import { DatabaseService } from '../database/database.service';
 import { OrganizacaoService } from '../database/organizacao.service';
 import type { UsuarioAutenticado } from '../auth/auth.types';
+import { CryptoService } from '../auth/crypto.service';
+import { mascararCpf } from '../auth/cpf';
 
 const FUSO = 'America/Campo_Grande';
 const ANO_EV = `date_part('year', e.inicio_em AT TIME ZONE '${FUSO}')`;
@@ -28,6 +30,7 @@ export class RelatoriosService {
     private readonly db: DatabaseService,
     private readonly organizacao: OrganizacaoService,
     private readonly auditoria: AuditoriaService,
+    private readonly crypto: CryptoService,
   ) {}
 
   private async registrar(user: UsuarioAutenticado, relatorio: string, ano: number, ip?: string) {
@@ -70,6 +73,39 @@ export class RelatoriosService {
     return csv(
       ['Evento', 'Data do evento', 'Membro', 'Forma', 'Registrada em', 'Registrada por', 'IP'],
       r.rows.map((x) => [x.evento, fmtDia(x.inicio_em), x.membro, x.metodo === 'qr' ? 'QR Code' : 'Manual', fmtData(x.registrado_em), x.registrado_por, x.ip]),
+    );
+  }
+
+  /** Todos os servos que se inscreveram no site, com a situação de cada cadastro (CPF sempre mascarado). */
+  async membros(user: UsuarioAutenticado, ip?: string): Promise<string> {
+    const org = await this.organizacao.id();
+    const r = await this.db.query<{
+      nome_completo: string; cpf_cifrado: Buffer | null; email: string | null; telefone: string | null; nasc: string | null;
+      edicao_tlc: string | null; comunidade: string | null; cidade: string | null; status: string; criado_em: Date; data_ingresso: string | null; cargos: string[];
+    }>(
+      `SELECT m.nome_completo, m.cpf_cifrado, m.email, m.telefone, to_char(m.data_nascimento, 'DD/MM/YYYY') AS nasc,
+              m.edicao_tlc, m.comunidade, m.cidade, m.status, m.criado_em, to_char(m.data_ingresso, 'DD/MM/YYYY') AS data_ingresso,
+              COALESCE((SELECT array_agg(p.nome ORDER BY p.nome) FROM usuario_perfis up JOIN perfis p ON p.id = up.perfil_id
+                         WHERE up.usuario_id = m.usuario_id AND p.codigo NOT IN ('membro', 'visitante')), '{}') AS cargos
+         FROM membros m
+        WHERE m.organizacao_id = $1 AND m.anonimizado_em IS NULL AND m.excluido_em IS NULL AND m.usuario_id IS NOT NULL
+        ORDER BY m.nome_completo`,
+      [org],
+    );
+    await this.auditoria.registrar('relatorio.exportar', 'relatorios', null, user.id, { relatorio: 'membros', linhas: r.rows.length }, ip);
+    const situacao: Record<string, string> = { ativo: 'Aprovado', pendente: 'Aguardando aprovação', inativo: 'Recusado/inativo' };
+    const tel = (v: string | null) => {
+      const d = (v ?? '').replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '');
+      return d.length === 11 ? d.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3') : d.length === 10 ? d.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3') : (v ?? '');
+    };
+    return csv(
+      ['Nome', 'CPF', 'E-mail', 'Telefone (WhatsApp)', 'Data de nascimento', 'Qual TLC fez', 'Comunidade', 'Cidade', 'Situação', 'Cargos', 'Inscrito em', 'Aprovado em'],
+      r.rows.map((x) => [
+        x.nome_completo,
+        x.cpf_cifrado ? mascararCpf(this.crypto.decifrarCpf(x.cpf_cifrado)) : '',
+        x.email, tel(x.telefone), x.nasc, x.edicao_tlc, x.comunidade, x.cidade,
+        situacao[x.status] ?? x.status, x.cargos.join(', '), fmtDia(x.criado_em), x.data_ingresso,
+      ]),
     );
   }
 

@@ -96,6 +96,15 @@ export class RelatoriosController {
     return this.relatorios.presencas(usuario(req), ano, req.ip);
   }
 
+  // Lista de servos inscritos no site (não depende do ano).
+  @Get('membros')
+  @Permissao('membros:ler')
+  @Header('Content-Type', 'text/csv; charset=utf-8')
+  membros(@Req() req: RequisicaoAutenticada, @Res({ passthrough: true }) res: Response) {
+    this.baixar(res, `tlc-servos-${new Date().toISOString().slice(0, 10)}.csv`);
+    return this.relatorios.membros(usuario(req), req.ip);
+  }
+
   @Get('frequencia')
   @Permissao('eventos:exportar')
   @Header('Content-Type', 'text/csv; charset=utf-8')
