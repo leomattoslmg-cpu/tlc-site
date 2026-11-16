@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Bell, CalendarDays, FileSpreadsheet, LogOut, QrCode, ScrollText, UserRound, UserCheck } from 'lucide-react';
+import { Bell, CalendarDays, FileSpreadsheet, LogOut, Pencil, QrCode, ScrollText, UserRound, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import { eventosPublicos } from '@/lib/api';
 import { dataHoraLonga } from '@/lib/format';
@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic';
 
 interface Me {
   usuario: { perfis: string[]; ultimo_login_em: string | null };
-  membro: { nome_completo: string; cpf_mascarado: string | null; email: string | null; telefone: string | null; igreja: { nome: string | null } } | null;
+  membro: { nome_completo: string; cpf_mascarado: string | null; email: string | null; telefone: string | null; cidade?: string | null; comunidade?: string | null; edicao_tlc?: string | null; igreja: { nome: string | null } } | null;
 }
 
 const ROTULO_PERFIL: Record<string, string> = {
@@ -90,17 +90,19 @@ export default async function Portal() {
       )}
 
       <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <section className="cartao p-5" aria-labelledby="dados">
+        <Link href="/portal/dados" aria-labelledby="dados" className="cartao block p-5 hover:bg-superficie focus-visible:outline focus-visible:outline-2">
           <h2 id="dados" className="mb-3 flex items-center gap-2 text-lg"><UserRound size={20} aria-hidden /> Meus dados</h2>
           <dl className="space-y-2 text-base">
             <Linha t="Nome" v={me.membro?.nome_completo} />
             <Linha t="CPF" v={me.membro?.cpf_mascarado} />
             <Linha t="E-mail" v={me.membro?.email} />
-            <Linha t="Telefone" v={me.membro?.telefone} />
-            <Linha t="Igreja" v={me.membro?.igreja.nome} />
+            <Linha t="Telefone" v={telTela(me.membro?.telefone)} />
+            <Linha t="TLC" v={me.membro?.edicao_tlc} />
+            <Linha t="Comunidade" v={me.membro?.comunidade} />
+            <Linha t="Cidade" v={me.membro?.cidade} />
           </dl>
-          <Link href="/portal/dados" className="mt-4 inline-block font-semibold text-primaria underline">Atualizar meus dados</Link>
-        </section>
+          <span className="mt-4 inline-flex items-center gap-1 font-semibold text-primaria underline"><Pencil size={16} aria-hidden /> Toque aqui para alterar seus dados</span>
+        </Link>
 
         <section className="cartao p-5" aria-labelledby="avisos">
           <h2 id="avisos" className="mb-3 flex items-center gap-2 text-lg"><Bell size={20} aria-hidden /> Avisos</h2>
@@ -126,6 +128,14 @@ export default async function Portal() {
       </div>
     </div>
   );
+}
+
+/** "+5567999692487" -> "(67) 99969-2487" */
+function telTela(v?: string | null) {
+  const d = (v ?? '').replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '');
+  if (d.length === 11) return d.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');
+  if (d.length === 10) return d.replace(/^(\d{2})(\d{4})(\d{4})$/, '($1) $2-$3');
+  return v ?? null;
 }
 
 function Linha({ t, v }: { t: string; v?: string | null }) {
