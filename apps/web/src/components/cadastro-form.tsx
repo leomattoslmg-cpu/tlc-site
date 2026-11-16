@@ -73,6 +73,7 @@ export function CadastroForm({ token }: { token?: string }) {
     if (!termo) return setErro('É preciso aceitar o uso dos dados para se cadastrar.');
     if (TURNSTILE_KEY && !captcha) return setErro('Confirme que você não é um robô.');
 
+    if (!API_URL) return setErro('Este site está sem o endereço da API (variável NEXT_PUBLIC_API_URL na Vercel). Avise a administração.');
     setEnviando(true);
     try {
       const r = await fetch(token ? `${API_URL}/public/cadastro/${encodeURIComponent(token)}` : `${API_URL}/public/cadastro`, {
