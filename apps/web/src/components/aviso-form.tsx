@@ -11,6 +11,7 @@ export interface AvisoEditavel {
   publico_alvo: string;
   fixado: boolean;
   status: string;
+  notificar?: boolean;
 }
 
 const CATEGORIAS = [
@@ -22,7 +23,7 @@ const CATEGORIAS = [
 
 export function AvisoForm({ id, inicial }: { id?: string; inicial?: AvisoEditavel }) {
   const router = useRouter();
-  const [v, setV] = useState<AvisoEditavel>(inicial ?? { titulo: '', conteudo: '', categoria: 'geral', publico_alvo: 'membros', fixado: false, status: 'publicado' });
+  const [v, setV] = useState<AvisoEditavel>(inicial ?? { titulo: '', conteudo: '', categoria: 'geral', publico_alvo: 'membros', fixado: false, status: 'publicado', notificar: true });
   const [erro, setErro] = useState('');
   const [enviando, setEnviando] = useState(false);
 
@@ -32,7 +33,7 @@ export function AvisoForm({ id, inicial }: { id?: string; inicial?: AvisoEditave
     if (v.titulo.trim().length < 3) return setErro('Informe o título do aviso.');
     if (v.conteudo.trim().length < 3) return setErro('Escreva o texto do aviso.');
     setEnviando(true);
-    const corpo = { titulo: v.titulo.trim(), conteudo: v.conteudo.trim(), categoria: v.categoria, publico_alvo: v.publico_alvo, fixado: v.fixado, status: v.status };
+    const corpo = { titulo: v.titulo.trim(), conteudo: v.conteudo.trim(), categoria: v.categoria, publico_alvo: v.publico_alvo, fixado: v.fixado, status: v.status, notificar: !id && v.notificar === true };
     const r = id ? await chamarPortal(`avisos/${id}`, 'PATCH', corpo) : await chamarPortal('avisos', 'POST', corpo);
     setEnviando(false);
     if (!r.ok) return setErro(r.mensagem ?? 'Não foi possível salvar.');
@@ -69,6 +70,12 @@ export function AvisoForm({ id, inicial }: { id?: string; inicial?: AvisoEditave
         <input type="checkbox" className="h-5 w-5" checked={v.fixado} onChange={(e) => setV({ ...v, fixado: e.target.checked })} />
         <span>Fixar no topo da lista</span>
       </label>
+      {!id && (
+        <label className="flex min-h-[44px] items-center gap-3">
+          <input type="checkbox" className="h-5 w-5" checked={v.notificar === true} onChange={(e) => setV({ ...v, notificar: e.target.checked })} />
+          <span>Avisar no celular de quem ativou as notificações</span>
+        </label>
+      )}
       {id && (
         <label className="flex min-h-[44px] items-center gap-3">
           <input type="checkbox" className="h-5 w-5" checked={v.status === 'arquivado'} onChange={(e) => setV({ ...v, status: e.target.checked ? 'arquivado' : 'publicado' })} />

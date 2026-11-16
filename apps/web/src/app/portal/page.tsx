@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { Bell, CalendarDays, ChevronRight, FileSpreadsheet, KeyRound, LogOut, Pencil, Pin, Plus, QrCode, ScrollText, Smartphone, UserCheck, UserRound } from 'lucide-react';
+import { NotificacaoBotao } from '@/components/notificacao-botao';
 import { Chip, dataCurta, type Aviso } from '@/components/aviso-card';
 import Link from 'next/link';
 import { eventosPublicos } from '@/lib/api';
@@ -85,6 +86,8 @@ export default async function Portal() {
           </div>
         </div>
       </header>
+
+      <NotificacaoBotao />
 
       {admin && (
         <section aria-labelledby="adm" className="mt-10">

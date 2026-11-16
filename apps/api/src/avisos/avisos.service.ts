@@ -3,6 +3,7 @@ import { Erros } from '../common/errors';
 import { AuditoriaService } from '../database/auditoria.service';
 import { DatabaseService } from '../database/database.service';
 import { OrganizacaoService } from '../database/organizacao.service';
+import { PushService } from '../push/push.service';
 import { AuthService } from '../auth/auth.service';
 import type { UsuarioAutenticado } from '../auth/auth.types';
 import type { AvisoInput, EditarAvisoInput } from './avisos.schemas';
@@ -24,6 +25,7 @@ export class AvisosService {
     private readonly organizacao: OrganizacaoService,
     private readonly auditoria: AuditoriaService,
     private readonly auth: AuthService,
+    private readonly push: PushService,
   ) {}
 
   private async gerencia(user: UsuarioAutenticado) {
@@ -60,6 +62,10 @@ export class AvisosService {
       await this.auditoria.registrar('aviso.criar', 'avisos', r.rows[0].id, user.id, { titulo: d.titulo }, ip, c);
       return r.rows[0].id;
     });
+    if (d.notificar) {
+      // Em segundo plano: a publicação não espera (nem falha por causa) do envio.
+      void this.push.avisar({ titulo: d.titulo, texto: d.conteudo.replace(/\s+/g, ' '), url: '/portal/avisos', soCoordenacao: d.publico_alvo === 'coordenacao' });
+    }
     return { id };
   }
 
