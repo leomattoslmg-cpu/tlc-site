@@ -7,7 +7,7 @@ const n = async (sql) => Number((await client.query(sql)).rows[0].n);
 const checks = [
   ['tabelas (sem schema_migrations)', `SELECT count(*) n FROM information_schema.tables WHERE table_schema='public' AND table_type='BASE TABLE' AND table_name<>'schema_migrations'`, 37],
   ['perfis', 'SELECT count(*) n FROM perfis', 10],
-  ['permissões', 'SELECT count(*) n FROM permissoes', 35],
+  ['permissões', 'SELECT count(*) n FROM permissoes', 36],
   ['organização', 'SELECT count(*) n FROM organizacoes', 1],
 ];
 let falhou = false;

@@ -17,6 +17,7 @@ const hora = (iso: string) => new Intl.DateTimeFormat('pt-BR', { timeZone: 'Amer
 
 export default async function EventoAdmin({ params }: { params: { id: string } }) {
   const d = await apiAutenticada<Detalhe>(`/eventos/${encodeURIComponent(params.id)}`);
+  const podeExcluir = ((await apiAutenticada<{ data: string[] }>('/me/permissoes'))?.data ?? []).includes('eventos:excluir');
   if (!d) {
     return (
       <div className="container-tlc py-8 sm:py-12">
@@ -42,7 +43,7 @@ export default async function EventoAdmin({ params }: { params: { id: string } }
             <Imprimir />
             {e.status !== 'cancelado' && <TrocarQr id={e.id} />}
             {e.status !== 'cancelado' && <CancelarEvento id={e.id} />}
-            <ExcluirEvento id={e.id} presentes={d.presencas.length} depois="/portal/admin/eventos" />
+            {podeExcluir && <ExcluirEvento id={e.id} presentes={d.presencas.length} depois="/portal/admin/eventos" />}
           </div>
         </section>
 

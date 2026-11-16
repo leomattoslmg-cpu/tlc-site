@@ -13,6 +13,7 @@ interface Ev { id: string; nome: string; inicio_em: string; local_nome: string |
 
 export default async function Eventos() {
   const r = await apiAutenticada<{ data: Ev[] }>('/eventos');
+  const podeExcluir = ((await apiAutenticada<{ data: string[] }>('/me/permissoes'))?.data ?? []).includes('eventos:excluir');
   return (
     <div className="container-tlc py-8 sm:py-12">
       <AdminNav atual="/portal/admin/eventos" />
@@ -32,7 +33,7 @@ export default async function Eventos() {
                     <Link href={`/portal/admin/eventos/${e.id}`} className="text-lg font-semibold text-primaria underline">{e.nome}</Link>
                     <p className="text-sm text-texto-apoio">{dataHoraLonga(e.inicio_em)}{e.local_nome ? ` · ${e.local_nome}` : ''}</p>
                     <p className="mt-1 text-sm">{e.status === 'cancelado' ? 'Cancelado' : `${e.presentes} presente(s)`}</p>
-                    <div className="mt-3"><ExcluirEvento id={e.id} presentes={e.presentes} /></div>
+                    {podeExcluir && <div className="mt-3"><ExcluirEvento id={e.id} presentes={e.presentes} /></div>}
                   </li>
                 ))}
               </ul>

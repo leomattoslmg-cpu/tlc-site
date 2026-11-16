@@ -47,7 +47,7 @@ export class EventosController {
   // Exclusão: o evento some da lista, das planilhas e do site (os dados ficam guardados no banco para a auditoria).
   @Delete(':id')
   @HttpCode(204)
-  @Permissao('eventos:editar')
+  @Permissao('eventos:excluir')
   async excluir(@Param('id', new ZodValidationPipe(idSchema)) id: string, @Req() req: RequisicaoAutenticada): Promise<void> {
     await this.eventos.excluir(usuario(req), id, req.ip);
   }
