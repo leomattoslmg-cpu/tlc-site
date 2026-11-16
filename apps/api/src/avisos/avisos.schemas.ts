@@ -6,7 +6,6 @@ export const avisoSchema = z.object({
   categoria: z.enum(['geral', 'eventos', 'coordenacao', 'importante'], { errorMap: () => ({ message: 'Escolha a categoria' }) }),
   publico_alvo: z.enum(['todos', 'membros', 'coordenacao']).default('membros'),
   fixado: z.boolean().default(false),
-  notificar: z.boolean().default(false),
 });
 export type AvisoInput = z.infer<typeof avisoSchema>;
 

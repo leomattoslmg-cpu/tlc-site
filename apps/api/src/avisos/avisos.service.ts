@@ -62,10 +62,8 @@ export class AvisosService {
       await this.auditoria.registrar('aviso.criar', 'avisos', r.rows[0].id, user.id, { titulo: d.titulo }, ip, c);
       return r.rows[0].id;
     });
-    if (d.notificar) {
-      // Em segundo plano: a publicação não espera (nem falha por causa) do envio.
-      void this.push.avisar({ titulo: d.titulo, texto: d.conteudo.replace(/\s+/g, ' '), url: '/portal/avisos', soCoordenacao: d.publico_alvo === 'coordenacao' });
-    }
+    // Na hora da publicação, em segundo plano: a publicação não espera (nem falha por causa) do envio.
+    void this.push.avisar({ titulo: d.titulo, texto: d.conteudo.replace(/\s+/g, ' '), url: '/portal/avisos', soCoordenacao: d.publico_alvo === 'coordenacao' });
     return { id };
   }
 

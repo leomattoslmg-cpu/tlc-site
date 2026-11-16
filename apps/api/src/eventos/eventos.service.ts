@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { randomBytes } from 'node:crypto';
 import { AppError, Erros } from '../common/errors';
+import { PushService } from '../push/push.service';
 import { AuditoriaService } from '../database/auditoria.service';
 import { DatabaseService } from '../database/database.service';
 import { OrganizacaoService } from '../database/organizacao.service';
@@ -25,6 +26,7 @@ export class EventosService {
     private readonly db: DatabaseService,
     private readonly organizacao: OrganizacaoService,
     private readonly auditoria: AuditoriaService,
+    private readonly push: PushService,
   ) {}
 
   async criar(user: UsuarioAutenticado, i: CriarEventoInput, ip?: string) {
@@ -37,6 +39,9 @@ export class EventosService {
       [org, i.nome, i.descricao ?? null, i.inicio_em, i.fim_em, i.local_nome ?? null, i.publico_no_site, token, user.id],
     );
     await this.auditoria.registrar('evento.criar', 'eventos', r.rows[0].id, user.id, { nome: i.nome, inicio_em: i.inicio_em }, ip);
+    // Na hora: todo mundo que ativou as notificações recebe o evento novo.
+    const quando = new Intl.DateTimeFormat('pt-BR', { weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit', timeZone: 'America/Campo_Grande' }).format(new Date(i.inicio_em));
+    void this.push.avisar({ titulo: `Novo evento: ${i.nome}`, texto: `${quando}${i.local_nome ? ` · ${i.local_nome}` : ''}`, url: '/portal', soCoordenacao: false });
     return { id: r.rows[0].id, checkin_token: token };
   }
 
@@ -72,12 +77,13 @@ export class EventosService {
 
   async cancelar(user: UsuarioAutenticado, id: string, ip?: string) {
     const org = await this.organizacao.id();
-    const r = await this.db.query(
-      "UPDATE eventos SET status = 'cancelado' WHERE id = $1 AND organizacao_id = $2 AND excluido_em IS NULL AND status <> 'cancelado'",
+    const r = await this.db.query<{ nome: string }>(
+      "UPDATE eventos SET status = 'cancelado' WHERE id = $1 AND organizacao_id = $2 AND excluido_em IS NULL AND status <> 'cancelado' RETURNING nome",
       [id, org],
     );
     if (!r.rowCount) throw Erros.naoEncontrado('Evento não encontrado ou já cancelado');
     await this.auditoria.registrar('evento.cancelar', 'eventos', id, user.id, null, ip);
+    void this.push.avisar({ titulo: `Evento cancelado: ${r.rows[0].nome}`, texto: 'Fique de olho nos avisos para saber os próximos passos.', url: '/portal', soCoordenacao: false });
   }
 
   /** Troca o código do QR. O cartaz antigo deixa de funcionar na hora. */
