@@ -16,11 +16,13 @@ describe('convite e cadastro', () => {
     expect(criarConviteSchema.parse({})).toEqual({ validade_horas: 72, max_usos: null });
   });
   it('cadastro exige aceite, CPF válido e senha forte', () => {
-    const base = { nome: 'Maria Silva', edicao_tlc: '87º TLC', cpf: '529.982.247-25', nascimento: '2000-01-01', telefone: '+5567999990001', email: 'm@x.com', senha: 'Servir2026', termo_aceito: true, captcha_token: 't' };
+    const base = { nome: 'Maria Silva', edicao_tlc: '87º TLC', comunidade: 'Comunidade São José', cidade: 'Ponta Porã', cpf: '529.982.247-25', nascimento: '2000-01-01', telefone: '+5567999990001', email: 'm@x.com', senha: 'Servir2026', termo_aceito: true, captcha_token: 't' };
     expect(cadastroSchema.safeParse(base).success).toBe(true);
     expect(cadastroSchema.safeParse({ ...base, termo_aceito: false }).success).toBe(false);
     expect(cadastroSchema.safeParse({ ...base, cpf: '111.111.111-11' }).success).toBe(false);
     expect(cadastroSchema.safeParse({ ...base, senha: 'abc' }).success).toBe(false);
     expect(cadastroSchema.safeParse({ ...base, edicao_tlc: '' }).success).toBe(false);
+    expect(cadastroSchema.safeParse({ ...base, comunidade: '' }).success).toBe(false);
+    expect(cadastroSchema.safeParse({ ...base, cidade: '' }).success).toBe(false);
   });
 });

@@ -92,9 +92,9 @@ export class CadastroService {
         );
         const m = await c.query<{ id: string }>(
           `INSERT INTO membros (organizacao_id, usuario_id, igreja_id, nome_completo, cpf_cifrado, cpf_hash, data_nascimento,
-                                telefone, whatsapp, email, status, termo_aceito_em, termo_versao, convite_id, edicao_tlc)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9, 'pendente', now(), '1', $10, $11) RETURNING id`,
-          [org, u.rows[0].id, ig.rows[0].id, d.nome, this.crypto.cifrarCpf(d.cpf), hashCpf, d.nascimento, d.telefone, d.email, cv.id, d.edicao_tlc],
+                                telefone, whatsapp, email, status, termo_aceito_em, termo_versao, convite_id, edicao_tlc, comunidade, cidade)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8, $9, 'pendente', now(), '1', $10, $11, $12, $13) RETURNING id`,
+          [org, u.rows[0].id, ig.rows[0].id, d.nome, this.crypto.cifrarCpf(d.cpf), hashCpf, d.nascimento, d.telefone, d.email, cv.id, d.edicao_tlc, d.comunidade, d.cidade],
         );
         await c.query("INSERT INTO usuario_perfis (usuario_id, perfil_id) SELECT $1, id FROM perfis WHERE codigo = 'membro'", [u.rows[0].id]);
         await c.query('UPDATE convites_cadastro SET usos = usos + 1 WHERE id = $1', [cv.id]);
@@ -118,8 +118,8 @@ export class CadastroService {
 
   async pendentes() {
     const org = await this.organizacao.id();
-    const r = await this.db.query<{ id: string; nome_completo: string; cpf_cifrado: Buffer | null; email: string | null; telefone: string | null; edicao_tlc: string | null; data_nascimento: string; criado_em: Date }>(
-      `SELECT id, nome_completo, cpf_cifrado, email, telefone, edicao_tlc, data_nascimento::text, criado_em
+    const r = await this.db.query<{ id: string; nome_completo: string; cpf_cifrado: Buffer | null; email: string | null; telefone: string | null; edicao_tlc: string | null; comunidade: string | null; cidade: string | null; data_nascimento: string; criado_em: Date }>(
+      `SELECT id, nome_completo, cpf_cifrado, email, telefone, edicao_tlc, comunidade, cidade, data_nascimento::text, criado_em
          FROM membros WHERE organizacao_id = $1 AND status = 'pendente' AND usuario_id IS NOT NULL AND excluido_em IS NULL
         ORDER BY criado_em`,
       [org],
@@ -154,8 +154,8 @@ export class CadastroService {
   async membros(q?: string) {
     const org = await this.organizacao.id();
     const termo = q?.trim() ? `%${q.trim().replace(/[%_\\]/g, '')}%` : null;
-    const r = await this.db.query<{ id: string; nome_completo: string; cpf_cifrado: Buffer | null; telefone: string | null; email: string | null; edicao_tlc: string | null; status: string }>(
-      `SELECT id, nome_completo, cpf_cifrado, telefone, email, edicao_tlc, status
+    const r = await this.db.query<{ id: string; nome_completo: string; cpf_cifrado: Buffer | null; telefone: string | null; email: string | null; edicao_tlc: string | null; comunidade: string | null; cidade: string | null; status: string }>(
+      `SELECT id, nome_completo, cpf_cifrado, telefone, email, edicao_tlc, comunidade, cidade, status
          FROM membros
         WHERE organizacao_id = $1 AND anonimizado_em IS NULL AND excluido_em IS NULL AND usuario_id IS NOT NULL
           AND ($2::text IS NULL OR nome_completo ILIKE $2)
