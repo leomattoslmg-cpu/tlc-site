@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Bell, CalendarDays, FileSpreadsheet, LogOut, Pencil, QrCode, ScrollText, UserRound, UserCheck } from 'lucide-react';
+import { Bell, CalendarDays, ChevronRight, FileSpreadsheet, KeyRound, LogOut, Pencil, Pin, Plus, QrCode, ScrollText, UserCheck, UserRound } from 'lucide-react';
+import { Chip, dataCurta, type Aviso } from '@/components/aviso-card';
 import Link from 'next/link';
 import { eventosPublicos } from '@/lib/api';
 import { dataHoraLonga } from '@/lib/format';
@@ -57,42 +58,77 @@ export default async function Portal() {
   const primeiro = me.membro?.nome_completo.split(' ')[0] ?? '';
   const perfis = me.usuario.perfis.map((p) => ROTULO_PERFIL[p] ?? p);
 
+  const avisos = (await apiAutenticada<{ data: Aviso[]; pode_editar: boolean }>('/avisos')) ?? { data: [], pode_editar: false };
+  const recentes = avisos.data.filter((a) => a.status === 'publicado').slice(0, 3);
+
   return (
-    <div className="container-tlc py-8 sm:py-12">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl">Paz e bem, {primeiro}!</h1>
-          <p className="mt-1 text-texto-apoio">{perfis.join(' · ')}</p>
-          <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1">
-            <Link href="/portal/dados" className="font-semibold text-primaria underline">Atualizar meus dados</Link>
-            <Link href="/portal/senha" className="font-semibold text-primaria underline">Trocar minha senha</Link>
+    <div className="container-tlc py-6 sm:py-10">
+      <header className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-faixa via-faixa to-[#0B2A4A] px-6 py-9 text-white shadow-cartao sm:px-12 sm:py-14">
+        <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-destaque/30 blur-3xl" aria-hidden />
+        <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-white/5 blur-3xl" aria-hidden />
+        <div className="relative">
+          <p className="text-xs font-bold uppercase tracking-[0.25em] text-destaque sm:text-sm">Treinamento de Liderança Cristã</p>
+          <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl">TLCista, sua força irradia.</h1>
+          <p className="mt-3 text-xl text-white/90 sm:text-2xl">Seja bem-vindo, <strong className="font-bold text-white">{primeiro}</strong></p>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {perfis.map((p) => (
+              <span key={p} className="rounded-full border border-white/25 bg-white/10 px-3 py-1 text-sm font-semibold text-white">{p}</span>
+            ))}
+          </div>
+          <div className="mt-6 flex flex-wrap gap-3">
+            <Link href="/portal/dados" className="inline-flex min-h-[44px] items-center gap-2 rounded-cartao bg-white/10 px-4 font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/20"><Pencil size={16} aria-hidden /> Atualizar meus dados</Link>
+            <Link href="/portal/senha" className="inline-flex min-h-[44px] items-center gap-2 rounded-cartao bg-white/10 px-4 font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/20"><KeyRound size={16} aria-hidden /> Trocar minha senha</Link>
+            <form action="/api/portal/sair" method="post">
+              <button type="submit" className="inline-flex min-h-[44px] items-center gap-2 rounded-cartao px-4 font-semibold text-white/90 ring-1 ring-white/25 transition hover:bg-white/10"><LogOut size={16} aria-hidden /> Sair</button>
+            </form>
           </div>
         </div>
-        <form action="/api/portal/sair" method="post">
-          <button type="submit" className="btn-secundario min-h-[44px] gap-2 px-4">
-            <LogOut size={18} aria-hidden /> Sair
-          </button>
-        </form>
-      </div>
+      </header>
 
       {admin && (
-        <section aria-labelledby="adm" className="mt-6">
-          <h2 id="adm" className="mb-3 text-lg">Administração</h2>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <section aria-labelledby="adm" className="mt-10">
+          <h2 id="adm" className="mb-4 text-xl font-bold">Administração</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {ATALHOS.filter((a) => a.perm.some((p) => perms.includes(p))).map((a) => (
-              <Link key={a.href} href={a.href} className="cartao flex items-start gap-3 p-4 hover:bg-superficie">
-                <a.icone size={24} className="mt-0.5 shrink-0 text-primaria" aria-hidden />
-                <span><span className="block font-semibold text-primaria">{a.titulo}</span><span className="text-sm text-texto-apoio">{a.texto}</span></span>
+              <Link key={a.href} href={a.href} className="cartao group flex items-center gap-4 p-4 transition hover:-translate-y-0.5 hover:border-primaria hover:shadow-lg">
+                <span className="grid h-12 w-12 shrink-0 place-items-center rounded-xl bg-primaria/10 text-primaria transition group-hover:bg-primaria group-hover:text-primaria-sobre"><a.icone size={24} aria-hidden /></span>
+                <span className="flex-1"><span className="block text-lg font-bold">{a.titulo}</span><span className="text-sm text-texto-apoio">{a.texto}</span></span>
+                <ChevronRight size={20} className="text-texto-apoio transition group-hover:translate-x-0.5 group-hover:text-primaria" aria-hidden />
               </Link>
             ))}
           </div>
         </section>
       )}
 
-      <div className="mt-8 grid gap-6 md:grid-cols-2">
-        <Link href="/portal/dados" aria-labelledby="dados" className="cartao block p-5 hover:bg-superficie focus-visible:outline focus-visible:outline-2">
-          <h2 id="dados" className="mb-3 flex items-center gap-2 text-lg"><UserRound size={20} aria-hidden /> Meus dados</h2>
-          <dl className="space-y-2 text-base">
+      <div className="mt-10 grid gap-6 lg:grid-cols-2">
+        <section className="cartao flex flex-col p-6" aria-labelledby="avisos">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 id="avisos" className="flex items-center gap-3 text-xl font-bold"><Icone><Bell size={20} aria-hidden /></Icone> Avisos</h2>
+            {avisos.pode_editar && (
+              <Link href="/portal/avisos/novo" className="inline-flex min-h-[40px] items-center gap-1.5 rounded-cartao bg-primaria px-3 text-sm font-semibold text-primaria-sobre hover:bg-primaria-forte"><Plus size={16} aria-hidden /> Novo</Link>
+            )}
+          </div>
+          {recentes.length === 0 ? (
+            <p className="text-texto-apoio">Nenhum aviso por enquanto. Quando a coordenação publicar, aparece aqui.</p>
+          ) : (
+            <ul className="space-y-3">
+              {recentes.map((a) => (
+                <li key={a.id}>
+                  <Link href="/portal/avisos" className="block rounded-cartao border border-borda p-4 transition hover:border-primaria hover:bg-superficie">
+                    <span className="mb-1.5 flex items-center gap-2"><Chip aviso={a} />{a.fixado && <Pin size={14} className="text-destaque" aria-label="Fixado" />}</span>
+                    <span className="block font-bold leading-snug">{a.titulo}</span>
+                    <span className="mt-0.5 block text-sm text-texto-apoio">{dataCurta(a.criado_em)} · {a.autor}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+          <Link href="/portal/avisos" className="mt-auto inline-flex items-center gap-1 pt-5 font-semibold text-primaria hover:underline">Ver todos os avisos <ChevronRight size={18} aria-hidden /></Link>
+        </section>
+
+        <Link href="/portal/dados" aria-labelledby="dados" className="cartao group block p-6 transition hover:border-primaria hover:shadow-lg">
+          <h2 id="dados" className="mb-4 flex items-center gap-3 text-xl font-bold"><Icone><UserRound size={20} aria-hidden /></Icone> Meus dados</h2>
+          <dl className="space-y-2.5">
             <Linha t="Nome" v={me.membro?.nome_completo} />
             <Linha t="CPF" v={me.membro?.cpf_mascarado} />
             <Linha t="E-mail" v={me.membro?.email} />
@@ -101,33 +137,32 @@ export default async function Portal() {
             <Linha t="Comunidade" v={me.membro?.comunidade} />
             <Linha t="Cidade" v={me.membro?.cidade} />
           </dl>
-          <span className="mt-4 inline-flex items-center gap-1 font-semibold text-primaria underline"><Pencil size={16} aria-hidden /> Toque aqui para alterar seus dados</span>
+          <span className="mt-5 inline-flex items-center gap-1.5 font-semibold text-primaria group-hover:underline"><Pencil size={16} aria-hidden /> Toque aqui para alterar seus dados</span>
         </Link>
 
-        <section className="cartao p-5" aria-labelledby="avisos">
-          <h2 id="avisos" className="mb-3 flex items-center gap-2 text-lg"><Bell size={20} aria-hidden /> Avisos</h2>
-          <p className="text-texto-apoio">Os avisos da coordenação vão aparecer aqui em breve.</p>
-        </section>
-
-        <section className="cartao p-5 md:col-span-2" aria-labelledby="eventos">
-          <h2 id="eventos" className="mb-3 flex items-center gap-2 text-lg"><CalendarDays size={20} aria-hidden /> Próximos eventos</h2>
+        <section className="cartao p-6 lg:col-span-2" aria-labelledby="eventos">
+          <h2 id="eventos" className="mb-4 flex items-center gap-3 text-xl font-bold"><Icone><CalendarDays size={20} aria-hidden /></Icone> Próximos eventos</h2>
           {eventos.length === 0 ? (
             <p className="text-texto-apoio">Nenhum evento marcado por enquanto.</p>
           ) : (
             <ul className="divide-y divide-borda">
               {eventos.map((e) => (
                 <li key={e.id} className="py-3">
-                  <p className="font-semibold">{e.nome}</p>
+                  <p className="font-bold">{e.nome}</p>
                   <p className="text-sm text-texto-apoio">{dataHoraLonga(e.inicio_em)}{e.local_nome ? ` · ${e.local_nome}` : ''}</p>
                 </li>
               ))}
             </ul>
           )}
-          <Link href="/eventos" className="mt-3 inline-block font-semibold text-primaria underline">Ver todos os eventos</Link>
+          <Link href="/eventos" className="mt-4 inline-flex items-center gap-1 font-semibold text-primaria hover:underline">Ver todos os eventos <ChevronRight size={18} aria-hidden /></Link>
         </section>
       </div>
     </div>
   );
+}
+
+function Icone({ children }: { children: React.ReactNode }) {
+  return <span className="grid h-10 w-10 place-items-center rounded-full bg-primaria/10 text-primaria">{children}</span>;
 }
 
 /** "+5567999692487" -> "(67) 99969-2487" */
