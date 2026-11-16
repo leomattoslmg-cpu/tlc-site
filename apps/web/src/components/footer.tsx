@@ -30,6 +30,11 @@ export function Footer() {
             </li>
           )}
           <li>
+            <Link href="/instalar" className="underline-offset-2 hover:underline">
+              Instalar o app
+            </Link>
+          </li>
+          <li>
             <Link href="/privacidade" className="underline-offset-2 hover:underline">
               Privacidade
             </Link>

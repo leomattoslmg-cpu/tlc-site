@@ -12,9 +12,14 @@ export const metadata: Metadata = {
   title: { default: `${SITE_NOME} · ${SITE_LEMA}`, template: `%s · ${SITE_NOME}` },
   description: 'Formando líderes para servir. Medo de nada, só amor! TLC Ponta Porã - MS.',
   openGraph: { siteName: SITE_NOME, locale: 'pt_BR', type: 'website' },
+  applicationName: 'TLC Ponta Porã',
+  icons: { apple: '/apple-touch-icon.png' },
+  appleWebApp: { capable: true, title: 'TLC Ponta Porã', statusBarStyle: 'black-translucent' },
+  formatDetection: { telephone: false },
 };
 
 export const viewport: Viewport = {
+  viewportFit: 'cover',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: '#06192E' },
     { media: '(prefers-color-scheme: dark)', color: '#04111F' },

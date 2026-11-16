@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Bell, CalendarDays, ChevronRight, FileSpreadsheet, KeyRound, LogOut, Pencil, Pin, Plus, QrCode, ScrollText, UserCheck, UserRound } from 'lucide-react';
+import { Bell, CalendarDays, ChevronRight, FileSpreadsheet, KeyRound, LogOut, Pencil, Pin, Plus, QrCode, ScrollText, Smartphone, UserCheck, UserRound } from 'lucide-react';
 import { Chip, dataCurta, type Aviso } from '@/components/aviso-card';
 import Link from 'next/link';
 import { eventosPublicos } from '@/lib/api';
@@ -78,6 +78,7 @@ export default async function Portal() {
           <div className="mt-6 flex flex-wrap gap-3">
             <Link href="/portal/dados" className="inline-flex min-h-[44px] items-center gap-2 rounded-cartao bg-white/10 px-4 font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/20"><Pencil size={16} aria-hidden /> Atualizar meus dados</Link>
             <Link href="/portal/senha" className="inline-flex min-h-[44px] items-center gap-2 rounded-cartao bg-white/10 px-4 font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/20"><KeyRound size={16} aria-hidden /> Trocar minha senha</Link>
+            <Link href="/instalar" className="inline-flex min-h-[44px] items-center gap-2 rounded-cartao bg-white/10 px-4 font-semibold text-white ring-1 ring-white/25 transition hover:bg-white/20"><Smartphone size={16} aria-hidden /> Instalar o app</Link>
             <form action="/api/portal/sair" method="post">
               <button type="submit" className="inline-flex min-h-[44px] items-center gap-2 rounded-cartao px-4 font-semibold text-white/90 ring-1 ring-white/25 transition hover:bg-white/10"><LogOut size={16} aria-hidden /> Sair</button>
             </form>
