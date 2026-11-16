@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Bell, CalendarDays, LogOut, QrCode, UserRound } from 'lucide-react';
+import { Bell, CalendarDays, FileSpreadsheet, LogOut, QrCode, ScrollText, UserRound, UserCheck } from 'lucide-react';
 import Link from 'next/link';
 import { eventosPublicos } from '@/lib/api';
 import { dataHoraLonga } from '@/lib/format';
@@ -28,6 +28,14 @@ const ROTULO_PERFIL: Record<string, string> = {
   marketing: 'Marketing',
 };
 
+const ATALHOS = [
+  { href: '/portal/admin/eventos', titulo: 'Eventos', texto: 'Criar, ver e cancelar eventos', icone: CalendarDays, perm: ['eventos:criar', 'eventos:participantes'] },
+  { href: '/portal/admin/qrcode', titulo: 'QR Code', texto: 'QR da presença de cada evento', icone: QrCode, perm: ['eventos:criar', 'eventos:participantes'] },
+  { href: '/portal/admin/membros', titulo: 'Cadastro', texto: 'Aprovar cadastros, cargos e senhas', icone: UserCheck, perm: ['usuarios:aprovar'] },
+  { href: '/portal/admin/relatorios', titulo: 'Planilhas', texto: 'Eventos, presenças e frequência', icone: FileSpreadsheet, perm: ['eventos:exportar'] },
+  { href: '/portal/admin/auditoria', titulo: 'Auditoria', texto: 'Quem fez o quê e quando', icone: ScrollText, perm: ['auditoria:ler'] },
+];
+
 async function carregarMe(): Promise<Me | null> {
   const token = cookies().get(COOKIE_ACESSO)?.value;
   if (!token) return null;
@@ -44,7 +52,7 @@ export default async function Portal() {
   if (!me) redirect('/portal/entrar');
   const agora = Date.now();
   const perms = (await apiAutenticada<{ data: string[] }>('/me/permissoes'))?.data ?? [];
-  const admin = perms.some((p) => ['eventos:participantes', 'eventos:exportar', 'usuarios:aprovar'].includes(p));
+  const admin = perms.some((p) => ['eventos:participantes', 'eventos:exportar', 'usuarios:aprovar', 'auditoria:ler'].includes(p));
   const eventos = (await eventosPublicos()).filter((e) => new Date(e.fim_em).getTime() >= agora && e.status !== 'cancelado').slice(0, 3);
   const primeiro = me.membro?.nome_completo.split(' ')[0] ?? '';
   const perfis = me.usuario.perfis.map((p) => ROTULO_PERFIL[p] ?? p);
@@ -68,9 +76,17 @@ export default async function Portal() {
       </div>
 
       {admin && (
-        <Link href="/portal/admin/eventos" className="cartao mt-6 flex items-center gap-3 p-4 font-semibold text-primaria hover:bg-superficie">
-          <QrCode size={22} aria-hidden /> Administração: eventos, QR Codes, cadastros e planilhas
-        </Link>
+        <section aria-labelledby="adm" className="mt-6">
+          <h2 id="adm" className="mb-3 text-lg">Administração</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {ATALHOS.filter((a) => a.perm.some((p) => perms.includes(p))).map((a) => (
+              <Link key={a.href} href={a.href} className="cartao flex items-start gap-3 p-4 hover:bg-superficie">
+                <a.icone size={24} className="mt-0.5 shrink-0 text-primaria" aria-hidden />
+                <span><span className="block font-semibold text-primaria">{a.titulo}</span><span className="text-sm text-texto-apoio">{a.texto}</span></span>
+              </Link>
+            ))}
+          </div>
+        </section>
       )}
 
       <div className="mt-8 grid gap-6 md:grid-cols-2">

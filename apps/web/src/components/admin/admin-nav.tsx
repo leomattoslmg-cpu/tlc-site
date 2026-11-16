@@ -1,9 +1,11 @@
 import Link from 'next/link';
 
 const ITENS = [
-  { href: '/portal/admin/eventos', rotulo: 'Eventos e presença' },
-  { href: '/portal/admin/membros', rotulo: 'Membros e aprovações' },
+  { href: '/portal/admin/eventos', rotulo: 'Eventos' },
+  { href: '/portal/admin/qrcode', rotulo: 'QR Code' },
+  { href: '/portal/admin/membros', rotulo: 'Cadastro' },
   { href: '/portal/admin/relatorios', rotulo: 'Planilhas' },
+  { href: '/portal/admin/auditoria', rotulo: 'Auditoria' },
 ];
 
 export function AdminNav({ atual }: { atual: string }) {

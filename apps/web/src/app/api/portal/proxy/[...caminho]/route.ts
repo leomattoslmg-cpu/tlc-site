@@ -4,7 +4,7 @@ import { chamarApi, COOKIE_ACESSO, COOKIE_REFRESH, opcoesCookie, REFRESH_SEGUNDO
 export const dynamic = 'force-dynamic';
 
 /** Só estas áreas da API podem ser chamadas por aqui (nada de /auth). */
-const PERMITIDOS = ['eventos', 'convites', 'membros', 'membros-pendentes', 'relatorios', 'presenca', 'me'];
+const PERMITIDOS = ['eventos', 'convites', 'membros', 'membros-pendentes', 'relatorios', 'presenca', 'me', 'auditoria'];
 
 async function repassar(req: NextRequest, { params }: { params: { caminho: string[] } }) {
   const [area] = params.caminho;
