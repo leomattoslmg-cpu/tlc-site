@@ -9,8 +9,10 @@ import { AuthService } from './auth.service';
 
 @Controller('auth')
 export class AuthController {
-  // Limite rígido por IP no login (RN: "limite rígido em login"): 20 tentativas a cada 15 minutos.
-  private readonly limiteLogin = new RateLimiter(20, 15 * 60 * 1000);
+  // Teto por IP. O site (Vercel) chama a API por poucos IPs, então este teto vale para TODOS os membros juntos:
+  // precisa ser folgado para um evento com dezenas de pessoas entrando ao mesmo tempo. A proteção contra
+  // adivinhar senha é o bloqueio por conta (5 erros = 15 minutos), feito no AuthService.
+  private readonly limiteLogin = new RateLimiter(600, 15 * 60 * 1000);
 
   constructor(private readonly auth: AuthService) {}
 

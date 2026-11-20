@@ -8,6 +8,8 @@ const PERMITIDOS = ['eventos', 'convites', 'membros', 'membros-pendentes', 'rela
 
 async function repassar(req: NextRequest, { params }: { params: { caminho: string[] } }) {
   const [area] = params.caminho;
+  // Nada de '.', '..' ou segmentos vazios: o caminho não pode escapar da área liberada.
+  if (params.caminho.some((seg) => seg === '' || seg === '.' || seg === '..')) return NextResponse.json({ mensagem: 'Não encontrado.' }, { status: 404 });
   if (!PERMITIDOS.includes(area)) return NextResponse.json({ mensagem: 'Não encontrado.' }, { status: 404 });
 
   // Mesma origem apenas (defesa contra pedidos vindos de outros sites).

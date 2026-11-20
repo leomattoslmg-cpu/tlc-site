@@ -224,6 +224,21 @@ export class CadastroService {
       [membroId, org],
     );
     if (!m.rows[0]) throw Erros.naoEncontrado('Membro não encontrado');
+    if (m.rows[0].usuario_id === user.id) {
+      throw new AppError(422, 'VALIDATION_ERROR', 'Use a troca de senha', 'Para mudar a sua própria senha, use "Trocar minha senha" no portal.');
+    }
+    // Ninguém redefine a senha de quem tem cargo igual ou maior (senão a Secretaria viraria Super Administrador).
+    const nivel = async (uid: string) => {
+      const n = await this.db.query<{ n: number }>(
+        'SELECT COALESCE(max(p.nivel), 0)::int AS n FROM usuario_perfis up JOIN perfis p ON p.id = up.perfil_id WHERE up.usuario_id = $1',
+        [uid],
+      );
+      return n.rows[0]?.n ?? 0;
+    };
+    const [meu, alvo] = [await nivel(user.id), await nivel(m.rows[0].usuario_id)];
+    if (meu < 5 && meu <= alvo) {
+      throw new AppError(403, 'FORBIDDEN', 'Sem permissão para esta ação', 'Você não pode redefinir a senha de alguém com cargo igual ou maior que o seu.');
+    }
     const letras = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz';
     const numeros = '23456789';
     const pega = (alfabeto: string, n: number) => Array.from({ length: n }, () => alfabeto[randomInt(alfabeto.length)]).join('');

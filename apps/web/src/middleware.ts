@@ -13,6 +13,7 @@ export async function middleware(req: NextRequest) {
   if (req.cookies.get('tlc_acesso')?.value) return NextResponse.next();
 
   const refresh = req.cookies.get('tlc_refresh')?.value;
+  let invalido = !refresh;
   if (refresh && API_URL) {
     try {
       const r = await fetch(`${API_URL}/auth/refresh`, {
@@ -29,14 +30,15 @@ export async function middleware(req: NextRequest) {
         resp.cookies.set('tlc_refresh', t.refresh_token, { ...base, maxAge: 30 * 24 * 60 * 60 });
         return resp;
       }
+      invalido = r.status === 401 || r.status === 403; // só aqui o token de renovação é inútil
     } catch {
-      /* cai na tela de entrada */
+      /* API dormindo ou fora do ar: mantém o refresh e manda para a tela de entrada */
     }
   }
   const destino = new URL('/portal/entrar', req.url);
   if (pathname.startsWith('/presenca/')) destino.searchParams.set('proximo', pathname);
   const resp = NextResponse.redirect(destino);
-  resp.cookies.delete('tlc_refresh');
+  if (invalido) resp.cookies.delete('tlc_refresh');
   return resp;
 }
 

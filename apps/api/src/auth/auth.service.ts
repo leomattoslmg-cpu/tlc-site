@@ -81,7 +81,10 @@ export class AuthService {
     }
 
     if (u.bloqueado_ate && u.bloqueado_ate.getTime() > Date.now()) {
-      throw Erros.limite(Math.ceil((u.bloqueado_ate.getTime() - Date.now()) / 1000));
+      // Mesma resposta (e o mesmo tempo) de uma senha errada: quem testa CPFs não descobre quais existem.
+      this.hashFalso ??= hashSenha(randomBytes(16).toString('hex'));
+      await conferirSenha(await this.hashFalso, input.senha);
+      throw this.credenciaisInvalidas();
     }
 
     const ok = u.senha_hash ? await conferirSenha(u.senha_hash, input.senha) : false;

@@ -169,7 +169,7 @@ function Icone({ children }: { children: React.ReactNode }) {
   return <span className="grid h-10 w-10 place-items-center rounded-full bg-primaria/10 text-primaria">{children}</span>;
 }
 
-/** "+5567999692487" -> "(67) 99969-2487" */
+/** "+5567999990001" -> "(67) 99999-0001" */
 function telTela(v?: string | null) {
   const d = (v ?? '').replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '');
   if (d.length === 11) return d.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3');

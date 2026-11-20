@@ -18,7 +18,7 @@ function usuario(req: RequisicaoAutenticada) {
 /** Rotas públicas: a pessoa chega pelo QR Code de cadastro. */
 @Controller('public/cadastro')
 export class CadastroPublicoController {
-  private readonly limite = new RateLimiter(10, 60 * 60 * 1000); // 10 cadastros por hora por IP
+  private readonly limite = new RateLimiter(30, 60 * 60 * 1000); // 30 cadastros por hora por IP (uma igreja inteira costuma sair pelo mesmo IP)
 
   constructor(
     private readonly cadastro: CadastroService,
