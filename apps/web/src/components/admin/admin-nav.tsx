@@ -1,6 +1,7 @@
 import Link from 'next/link';
 
 const ITENS = [
+  { href: '/portal/admin/painel', rotulo: 'Painel' },
   { href: '/portal/admin/eventos', rotulo: 'Eventos' },
   { href: '/portal/admin/qrcode', rotulo: 'QR Code' },
   { href: '/portal/admin/membros', rotulo: 'Cadastro' },

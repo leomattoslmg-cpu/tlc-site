@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
-import { Bell, CalendarDays, ChevronRight, FileSpreadsheet, KeyRound, LogOut, Pencil, Pin, Plus, QrCode, ScrollText, Smartphone, UserCheck, UserRound } from 'lucide-react';
+import { Bell, CalendarDays, ChevronRight, FileSpreadsheet, KeyRound, LayoutDashboard, LogOut, Pencil, Pin, Plus, QrCode, ScrollText, Smartphone, UserCheck, UserRound } from 'lucide-react';
 import { NotificacaoBotao } from '@/components/notificacao-botao';
 import { Chip, dataCurta, type Aviso } from '@/components/aviso-card';
 import Link from 'next/link';
@@ -31,6 +31,7 @@ const ROTULO_PERFIL: Record<string, string> = {
 };
 
 const ATALHOS = [
+  { href: '/portal/admin/painel', titulo: 'Painel', texto: 'Números, gráficos e resumos', icone: LayoutDashboard, perm: ['dashboard:ler'] },
   { href: '/portal/admin/eventos', titulo: 'Eventos', texto: 'Criar, ver e cancelar eventos', icone: CalendarDays, perm: ['eventos:criar', 'eventos:participantes'] },
   { href: '/portal/admin/qrcode', titulo: 'QR Code', texto: 'QR da presença de cada evento', icone: QrCode, perm: ['eventos:criar', 'eventos:participantes'] },
   { href: '/portal/admin/membros', titulo: 'Cadastro', texto: 'Aprovar cadastros, cargos e senhas', icone: UserCheck, perm: ['usuarios:aprovar'] },
@@ -54,7 +55,7 @@ export default async function Portal() {
   if (!me) redirect('/portal/entrar');
   const agora = Date.now();
   const perms = (await apiAutenticada<{ data: string[] }>('/me/permissoes'))?.data ?? [];
-  const admin = perms.some((p) => ['eventos:participantes', 'eventos:exportar', 'usuarios:aprovar', 'auditoria:ler'].includes(p));
+  const admin = perms.some((p) => ['eventos:participantes', 'eventos:exportar', 'usuarios:aprovar', 'auditoria:ler', 'dashboard:ler'].includes(p));
   const eventos = (await eventosPublicos()).filter((e) => new Date(e.fim_em).getTime() >= agora && e.status !== 'cancelado').slice(0, 3);
   const primeiro = me.membro?.nome_completo.split(' ')[0] ?? '';
   const perfis = me.usuario.perfis.map((p) => ROTULO_PERFIL[p] ?? p);
