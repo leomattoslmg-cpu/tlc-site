@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { PORTAL_URL } from '@/lib/site';
 
-/** "Entrar" por padrão; vira "Meu portal" quando há sessão. Feito no navegador para o resto do site continuar estático. */
+/** "Cadastrar" e "Entrar" por padrão; vira "Meu portal" quando há sessão. Feito no navegador para o resto do site continuar estático. */
 export function BotaoPortal() {
   const [logado, setLogado] = useState(false);
   useEffect(() => {
@@ -12,9 +12,11 @@ export function BotaoPortal() {
       .then((d) => setLogado(Boolean(d.logado)))
       .catch(() => undefined);
   }, []);
+  if (logado) return <a href="/portal" className="btn-primario min-h-[44px] px-4">Meu portal</a>;
   return (
-    <a href={logado ? '/portal' : PORTAL_URL} className="btn-primario min-h-[44px] px-4">
-      {logado ? 'Meu portal' : 'Entrar'}
-    </a>
+    <>
+      <a href="/cadastro" className="btn-secundario min-h-[44px] px-3 sm:px-4">Cadastrar</a>
+      <a href={PORTAL_URL} className="btn-primario min-h-[44px] px-3 sm:px-4">Entrar</a>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import { Eye, EyeOff } from 'lucide-react';
+import Link from 'next/link';
 import { useState } from 'react';
 
 function mascara(v: string) {
@@ -18,11 +19,13 @@ export function EntrarForm({ proximo }: { proximo?: string }) {
   const [senha, setSenha] = useState('');
   const [ver, setVer] = useState(false);
   const [erro, setErro] = useState('');
+  const [semCadastro, setSemCadastro] = useState(false);
   const [enviando, setEnviando] = useState(false);
 
   async function aoEnviar(ev: React.FormEvent) {
     ev.preventDefault();
     setErro('');
+    setSemCadastro(false);
     if (cpf.replace(/\D/g, '').length !== 11) return setErro('O CPF tem 11 números.');
     if (!senha) return setErro('Informe a senha.');
     setEnviando(true);
@@ -35,6 +38,7 @@ export function EntrarForm({ proximo }: { proximo?: string }) {
       const d = await r.json().catch(() => ({}));
       if (!r.ok) {
         const espera = r.headers.get('retry-after');
+        setSemCadastro(r.status === 401);
         setErro(r.status === 429 && espera ? `Muitas tentativas. Tente de novo em ${Math.ceil(Number(espera) / 60)} minuto(s).` : d.mensagem || 'Não foi possível entrar.');
         setEnviando(false);
         return;
@@ -61,6 +65,13 @@ export function EntrarForm({ proximo }: { proximo?: string }) {
           </button>
         </div>
       </div>
+      {semCadastro && (
+        <div role="status" className="rounded-cartao border border-destaque p-4 text-sm">
+          <p className="font-semibold">Ainda não tem cadastro?</p>
+          <p className="mt-1 text-texto-apoio">Se for a sua primeira vez aqui, faça o cadastro. É rápido e a coordenação aprova o seu acesso.</p>
+          <Link href="/cadastro" className="btn-secundario mt-3 min-h-[44px] w-full">Fazer meu cadastro</Link>
+        </div>
+      )}
       {erro && <p role="alert" className="rounded-cartao border border-cat-importante p-3 text-sm font-semibold text-cat-importante">{erro}</p>}
       <button type="submit" disabled={enviando} className="btn-primario w-full disabled:opacity-60">
         {enviando ? 'Entrando…' : 'Entrar'}

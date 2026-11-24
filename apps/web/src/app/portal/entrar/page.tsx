@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { EntrarForm } from '@/components/entrar-form';
@@ -20,7 +21,7 @@ export default function Entrar({ searchParams }: { searchParams: { proximo?: str
           <p className="mt-1 text-texto-apoio">Entre com o seu CPF e a sua senha.</p>
         </div>
         <EntrarForm proximo={proximo} />
-        <p className="mt-6 text-center text-sm text-texto-apoio">Esqueceu a senha ou ainda não tem acesso? Fale com a Secretaria do TLC.</p>
+        <p className="mt-6 text-center text-sm text-texto-apoio">Primeira vez aqui? <Link href="/cadastro" className="font-semibold text-primaria underline">Faça o seu cadastro</Link>. Esqueceu a senha? Fale com a Secretaria do TLC.</p>
       </div>
     </section>
   );
