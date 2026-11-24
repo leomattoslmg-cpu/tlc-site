@@ -4,7 +4,9 @@ import { redirect } from 'next/navigation';
 import { Bell, CalendarDays, ChevronRight, FileSpreadsheet, KeyRound, LayoutDashboard, LogOut, Pencil, Pin, Plus, QrCode, ScrollText, Smartphone, UserCheck, UserRound } from 'lucide-react';
 import { NotificacaoBotao } from '@/components/notificacao-botao';
 import { Chip, dataCurta, type Aviso } from '@/components/aviso-card';
+import Image from 'next/image';
 import Link from 'next/link';
+import { Guadalupe } from '@/components/guadalupe';
 import { eventosPublicos } from '@/lib/api';
 import { dataHoraLonga } from '@/lib/format';
 import { apiAutenticada, chamarApi, COOKIE_ACESSO } from '@/lib/sessao';
@@ -68,7 +70,8 @@ export default async function Portal() {
       <header className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-faixa via-faixa to-[#0B2A4A] px-6 py-9 text-white shadow-cartao sm:px-12 sm:py-14">
         <div className="pointer-events-none absolute -right-20 -top-24 h-80 w-80 rounded-full bg-destaque/30 blur-3xl" aria-hidden />
         <div className="pointer-events-none absolute -bottom-32 -left-16 h-72 w-72 rounded-full bg-white/5 blur-3xl" aria-hidden />
-        <div className="relative">
+        <div className="relative flex flex-col gap-8 md:flex-row md:items-center md:justify-between">
+          <div>
           <p className="text-xs font-bold uppercase tracking-[0.25em] text-destaque sm:text-sm">Treinamento de Liderança Cristã</p>
           <h1 className="mt-3 text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-5xl">TLCista, sua força irradia.</h1>
           <p className="mt-3 text-xl text-white/90 sm:text-2xl">Seja bem-vindo, <strong className="font-bold text-white">{primeiro}</strong></p>
@@ -84,6 +87,19 @@ export default async function Portal() {
             <form action="/api/portal/sair" method="post">
               <button type="submit" className="inline-flex min-h-[44px] items-center gap-2 rounded-cartao px-4 font-semibold text-white/90 ring-1 ring-white/25 transition hover:bg-white/10"><LogOut size={16} aria-hidden /> Sair</button>
             </form>
+          </div>
+          </div>
+          <div className="flex shrink-0 items-end justify-center gap-4 md:gap-6">
+            <figure className="text-center">
+              <div className="relative h-44 w-32 overflow-hidden rounded-[50%] border-[3px] border-destaque shadow-[0_0_40px_rgba(212,160,36,0.35)] sm:h-52 sm:w-40 md:h-64 md:w-48">
+                <Image src="/padre-haroldo.jpg" alt="Padre Haroldo" fill sizes="(min-width: 768px) 192px, 160px" className="object-cover object-[50%_18%]" />
+              </div>
+              <figcaption className="mt-2 text-sm font-semibold tracking-wide text-white/90">Padre Haroldo</figcaption>
+            </figure>
+            <div className="relative grid place-items-center">
+              <div className="absolute inset-0 -m-6 rounded-full bg-destaque/25 blur-2xl" aria-hidden />
+              <Guadalupe className="relative h-44 drop-shadow-lg sm:h-52 md:h-64" />
+            </div>
           </div>
         </div>
       </header>
