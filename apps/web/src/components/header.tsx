@@ -10,7 +10,10 @@ export function Header() {
       <div className="container-tlc flex min-h-[64px] items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primaria">
           <Guadalupe className="h-12 w-10 shrink-0" />
-          <span className="hidden sm:inline">{SITE_NOME}</span>
+          <span className="hidden flex-col leading-tight sm:flex">
+            <span>{SITE_NOME}</span>
+            <span className="text-xs font-medium text-texto-apoio">Diocese de Dourados - MS</span>
+          </span>
         </Link>
 
         <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
