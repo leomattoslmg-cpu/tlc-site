@@ -8,6 +8,7 @@
   --primaria-forte: 3 15 29;    /* #030F1D */
   --faixa: 6 25 46;             /* fundo da faixa de destaque (igual nos dois modos) */
   --sobre-primaria: 255 255 255;
+  --destaque-texto: 146 104 0;  /* dourado mais escuro, legível como texto sobre branco */
   --destaque: 184 134 11;       /* dourado #B8860B: só detalhes; não use como cor de texto sobre branco */
   --fundo: 255 255 255;
   --superficie: 245 247 250;    /* #F5F7FA */
@@ -27,6 +28,7 @@
     --faixa: 4 18 34;
     --sobre-primaria: 16 24 32;
     --destaque: 212 160 36;
+    --destaque-texto: 212 160 36;
     --fundo: 16 24 32;
     --superficie: 27 37 48;
     --borda: 52 64 77;
@@ -42,12 +44,15 @@
 html { font-size: 16px; }
 body { @apply bg-fundo font-sans text-texto antialiased; }
 h1, h2, h3 { @apply font-semibold text-texto; }
+::selection { background: rgb(var(--destaque) / 0.35); }
 :focus-visible { outline: 3px solid rgb(var(--primaria)); outline-offset: 2px; }
 
 @layer components {
   .container-tlc { @apply mx-auto w-full max-w-6xl px-4 sm:px-6; }
   .btn { @apply inline-flex min-h-[48px] items-center justify-center rounded-cartao px-5 text-base font-semibold transition-colors; }
-  .btn-primario { @apply btn bg-primaria text-primaria-sobre hover:bg-primaria-forte; }
+  .btn-primario { @apply btn bg-primaria text-primaria-sobre ring-1 ring-destaque/50 hover:bg-primaria-forte hover:ring-destaque; }
+  .sublinhado-dourado { @apply relative pb-3; }
+  .sublinhado-dourado::after { content: ''; position: absolute; left: 0; bottom: 0; width: 3rem; height: 3px; border-radius: 2px; background: rgb(var(--destaque)); }
   .btn-secundario { @apply btn border border-primaria text-primaria hover:bg-superficie; }
   .cartao { @apply rounded-cartao border border-borda bg-fundo shadow-cartao; }
   .campo { @apply box-border min-h-[48px] w-full min-w-0 max-w-full rounded-cartao border border-borda bg-fundo px-3 text-base text-texto placeholder:text-texto-apoio; }

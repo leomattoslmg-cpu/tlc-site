@@ -22,7 +22,7 @@ export default async function Home() {
       <section className="overflow-hidden bg-faixa text-white">
         <div className="container-tlc flex flex-col items-center gap-10 py-16 sm:py-24 md:flex-row md:justify-between">
           <div>
-          <p className="text-base font-semibold uppercase tracking-wide opacity-90">{SITE_LEMA}</p>
+          <p className="text-base font-bold uppercase tracking-[0.2em] text-destaque">{SITE_LEMA}</p>
           <h1 className="mt-3 max-w-2xl text-3xl text-white sm:text-5xl">Formando líderes para servir.</h1>
           <p className="mt-4 text-xl font-semibold text-white sm:text-2xl">Medo de nada, só amor!</p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -44,7 +44,7 @@ export default async function Home() {
 
       <section className="container-tlc py-12">
         <div className="flex items-end justify-between gap-4">
-          <h2 className="text-2xl">Próximos eventos</h2>
+          <h2 className="sublinhado-dourado text-2xl">Próximos eventos</h2>
           <Link href="/eventos" className="text-base font-semibold text-primaria hover:underline">
             Ver todos
           </Link>
@@ -63,7 +63,7 @@ export default async function Home() {
       <section className="container-tlc py-4" aria-labelledby="membro">
         <div className="cartao flex flex-col items-start gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 id="membro" className="text-2xl">Faça parte do TLC</h2>
+            <h2 id="membro" className="sublinhado-dourado text-2xl">Faça parte do TLC</h2>
             <p className="mt-1 max-w-xl text-base text-texto-apoio">Se você fez o TLC, faça o seu cadastro. A coordenação confere e libera o acesso. Quem já é membro entra com o CPF e a senha.</p>
           </div>
           <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
@@ -75,7 +75,7 @@ export default async function Home() {
 
       <section className="container-tlc py-12">
         <div className="flex items-end justify-between gap-4">
-          <h2 className="text-2xl">Galeria recente</h2>
+          <h2 className="sublinhado-dourado text-2xl">Galeria recente</h2>
           <Link href="/galeria" className="text-base font-semibold text-primaria hover:underline">
             Ver galeria completa
           </Link>

@@ -3,10 +3,10 @@ import { CONTATO_EMAIL, CONTATO_INSTAGRAM, SITE_LEMA, SITE_NOME } from '@/lib/si
 
 export function Footer() {
   return (
-    <footer className="mt-16 border-t border-borda bg-superficie">
+    <footer className="mt-16 border-t-2 border-destaque/60 bg-superficie">
       <div className="container-tlc flex flex-col gap-4 py-10 text-base text-texto-apoio sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="font-semibold text-texto">{SITE_NOME}</p>
+          <p className="font-semibold text-destaque-texto">{SITE_NOME}</p>
           <p>{SITE_LEMA}</p>
         </div>
         <ul className="flex flex-col gap-1">

@@ -7,18 +7,19 @@ import { MENU, SITE_NOME } from '@/lib/site';
 export function Header() {
   return (
     <header className="sticky top-0 z-40 border-b border-borda bg-fundo/95 backdrop-blur">
+      <div className="absolute inset-x-0 bottom-0 h-[2px] bg-gradient-to-r from-transparent via-destaque to-transparent" aria-hidden />
       <div className="container-tlc flex min-h-[64px] items-center justify-between gap-4">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold text-primaria">
           <Guadalupe className="h-12 w-10 shrink-0" />
           <span className="hidden flex-col leading-tight sm:flex">
             <span>{SITE_NOME}</span>
-            <span className="text-xs font-medium text-texto-apoio">Diocese de Dourados - MS</span>
+            <span className="text-xs font-semibold tracking-wide text-destaque-texto">Diocese de Dourados - MS</span>
           </span>
         </Link>
 
         <nav aria-label="Principal" className="hidden items-center gap-1 lg:flex">
           {MENU.map((i) => (
-            <Link key={i.href} href={i.href} className="rounded-lg px-3 py-2 text-base text-texto hover:bg-superficie">
+            <Link key={i.href} href={i.href} className="rounded-lg px-3 py-2 text-base text-texto hover:bg-superficie hover:text-destaque-texto">
               {i.rotulo}
             </Link>
           ))}

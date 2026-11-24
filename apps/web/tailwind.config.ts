@@ -11,6 +11,7 @@ const config: Config = {
         primaria: { DEFAULT: token('primaria'), forte: token('primaria-forte'), sobre: token('sobre-primaria') },
         faixa: token('faixa'),
         destaque: token('destaque'),
+        'destaque-texto': token('destaque-texto'),
         fundo: token('fundo'),
         superficie: token('superficie'),
         borda: token('borda'),
