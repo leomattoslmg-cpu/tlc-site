@@ -12,7 +12,16 @@ export function BotaoPortal() {
       .then((d) => setLogado(Boolean(d.logado)))
       .catch(() => undefined);
   }, []);
-  if (logado) return <a href="/portal" className="btn-primario min-h-[44px] px-4">Meu portal</a>;
+  if (logado) {
+    return (
+      <>
+        <a href="/portal" className="btn-primario min-h-[44px] px-3 sm:px-4">Meu portal</a>
+        <form action="/api/portal/sair" method="post">
+          <button type="submit" className="btn-secundario min-h-[44px] px-3 sm:px-4">Sair</button>
+        </form>
+      </>
+    );
+  }
   return (
     <>
       <a href="/cadastro" className="btn-secundario min-h-[44px] px-3 sm:px-4">Cadastrar</a>
