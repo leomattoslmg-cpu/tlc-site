@@ -92,9 +92,8 @@ export default async function Portal() {
           <div className="flex shrink-0 items-end justify-center gap-4 md:gap-6">
             <figure className="text-center">
               <div className="relative h-44 w-32 overflow-hidden rounded-[50%] border-[3px] border-destaque shadow-[0_0_40px_rgba(212,160,36,0.35)] sm:h-52 sm:w-40 md:h-64 md:w-48">
-                <Image src="/padre-haroldo.jpg" alt="Padre Haroldo" fill sizes="(min-width: 768px) 192px, 160px" className="object-cover object-[50%_18%]" />
+                <Image src="/padre-haroldo.jpg" alt="Foto de um padre sorrindo, com as mãos unidas" fill sizes="(min-width: 768px) 192px, 160px" className="object-cover object-[50%_18%]" />
               </div>
-              <figcaption className="mt-2 text-sm font-semibold tracking-wide text-white/90">Padre Haroldo</figcaption>
             </figure>
             <div className="relative grid place-items-center">
               <div className="absolute inset-0 -m-6 rounded-full bg-destaque/25 blur-2xl" aria-hidden />
