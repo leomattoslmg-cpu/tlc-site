@@ -89,16 +89,19 @@ export default async function Portal() {
             </form>
           </div>
           </div>
-          <div className="flex shrink-0 items-end justify-center gap-4 md:gap-6">
-            <figure className="text-center">
-              <div className="relative h-44 w-32 overflow-hidden rounded-[50%] border-[3px] border-destaque shadow-[0_0_40px_rgba(212,160,36,0.35)] sm:h-52 sm:w-40 md:h-64 md:w-48">
-                <Image src="/padre-haroldo.jpg" alt="Foto de um padre sorrindo, com as mãos unidas" fill sizes="(min-width: 768px) 192px, 160px" className="object-cover object-[50%_18%]" />
-              </div>
-            </figure>
+          <div className="flex shrink-0 items-center justify-center gap-0 md:gap-2">
             <div className="relative grid place-items-center">
               <div className="absolute inset-0 -m-6 rounded-full bg-destaque/25 blur-2xl" aria-hidden />
               <Guadalupe className="relative h-44 drop-shadow-lg sm:h-52 md:h-64" />
             </div>
+            <figure className="-ml-4 md:-ml-6">
+              <div
+                className="relative h-52 w-40 sm:h-60 sm:w-44 md:h-72 md:w-52"
+                style={{ WebkitMaskImage: 'radial-gradient(ellipse 50% 50% at 50% 46%, #000 38%, transparent 100%)', maskImage: 'radial-gradient(ellipse 50% 50% at 50% 46%, #000 38%, transparent 100%)' }}
+              >
+                <Image src="/padre-haroldo.jpg" alt="Foto de um padre sorrindo, com as mãos unidas" fill sizes="(min-width: 768px) 208px, 176px" className="object-cover object-[50%_18%]" />
+              </div>
+            </figure>
           </div>
         </div>
       </header>
